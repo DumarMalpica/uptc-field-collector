@@ -1,0 +1,1 @@
+Aca se debe implementar la logica de serializacion, osea convertir las entidades en filas de ecel, para la funcionalidad de exportar

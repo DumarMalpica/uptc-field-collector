@@ -1,0 +1,1 @@
+El servicio de Isar, debe abrir la instancia una sola vez y proveer los metodos del CRUD
