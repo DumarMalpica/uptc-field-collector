@@ -1,6 +1,23 @@
 import 'package:field_colector/domain/entities/user.dart';
 import 'package:flutter/material.dart';
 
+const _mockUsers = [
+  {
+    'id': '1',
+    'userName': 'pepito',
+    'password': 'pepito123',
+    'email': 'pepito@citesa.com',
+    'role': 'admin',
+  },
+  {
+    'id': '2',
+    'userName': 'juanito',
+    'password': 'juanito123',
+    'email': 'juanito@citesa.com',
+    'role': 'user',
+  },
+];
+
 class Authprovider extends ChangeNotifier {
   User? _user;
   bool _isLoggedIn = false;
@@ -52,6 +69,88 @@ class Authprovider extends ChangeNotifier {
     _setErrorMessage('');
     notifyListeners();
   }
+
+  Future<bool> loginMock(String userName, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    final match = _mockUsers.where(
+          (u) => u['userName'] == userName && u['password'] == password,
+    );
+
+    if (match.isEmpty) {
+      _isLoading = false;
+      _errorMessage = 'Usuario o contraseña incorrectos';
+      notifyListeners();
+      return false;
+    }
+
+    final data = match.first;
+    _setToken('mock-token-${data['id']}');
+    _setUser(User(
+      id: data['id']!,
+      userName: data['userName']!,
+      email: data['email']!,
+      role: data['role']!,
+    ));
+    setIsLoggedIn(true);
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> registerMock({
+    required String userName,
+    required String email,
+    required String password,
+    required String confirmPassword,
+    required String role,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (userName.isEmpty || email.isEmpty || password.isEmpty) {
+      _isLoading = false;
+      _errorMessage = 'Todos los campos son obligatorios';
+      notifyListeners();
+      return false;
+    }
+
+    if (password != confirmPassword) {
+      _isLoading = false;
+      _errorMessage = 'Las contraseñas no coinciden';
+      notifyListeners();
+      return false;
+    }
+
+    if (password.length < 6) {
+      _isLoading = false;
+      _errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+      notifyListeners();
+      return false;
+    }
+
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    _setToken('mock-token-$newId');
+    _setUser(User(
+      id: newId,
+      userName: userName,
+      email: email,
+      role: role,
+    ));
+    setIsLoggedIn(true);
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+
 
   Future<void> refreshToken() async {
     // TODO: usar el repository para refrescar el token

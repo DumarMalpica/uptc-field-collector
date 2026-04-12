@@ -1,16 +1,43 @@
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class LoginForm extends StatelessWidget {
+class LoginForm extends StatefulWidget {
   final Animation<double> animation;
 
   const LoginForm({super.key, required this.animation});
+
+  @override
+  State<LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<LoginForm> {
+  final _userController = TextEditingController();
+  final _passController = TextEditingController();
+  bool _obscurePass = true;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _userController.addListener(() => setState(() => _errorMessage = null));
+    _passController.addListener(() => setState(() => _errorMessage = null));
+  }
+
+  @override
+  void dispose() {
+    _userController.dispose();
+    _passController.dispose();
+    super.dispose();
+  }
 
   Widget _staggered(int index, Widget child) {
     final start = index * 0.2;
     final end = (start + 0.4).clamp(0.0, 1.0);
     final curved = CurvedAnimation(
-      parent: animation,
+      parent: widget.animation,
       curve: Interval(start, end, curve: Curves.easeOut),
     );
     return FadeTransition(
@@ -25,6 +52,33 @@ class LoginForm extends StatelessWidget {
     );
   }
 
+
+  Future<void> _handleLogin(BuildContext context) async {
+    final auth = context.read<Authprovider>();
+    final user = _userController.text.trim();
+    final pass = _passController.text.trim();
+
+    if (user.isEmpty || pass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Completa todos los campos')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final ok = await auth.loginMock(user, pass);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (!ok) {
+      setState(() => _errorMessage = auth.errorMessage ?? 'Error al ingresar');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -32,8 +86,9 @@ class LoginForm extends StatelessWidget {
       children: [
         _staggered(
           0,
-          const TextField(
-            decoration: InputDecoration(
+          TextField(
+            controller: _userController,
+            decoration: const InputDecoration(
               labelText: 'Usuario',
               prefixIcon: Icon(Icons.person_outline),
             ),
@@ -42,11 +97,17 @@ class LoginForm extends StatelessWidget {
         const SizedBox(height: 16),
         _staggered(
           1,
-          const TextField(
-            obscureText: true,
+          TextField(
+            controller: _passController,
+            obscureText: _obscurePass,
             decoration: InputDecoration(
               labelText: 'Contraseña',
-              suffixIcon: Icon(Icons.visibility_off_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePass
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined),
+                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+              ),
             ),
           ),
         ),
@@ -56,15 +117,30 @@ class LoginForm extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: _isLoading ? null : () => _handleLogin(context),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryDark,
                 side: const BorderSide(color: AppColors.primaryDark),
               ),
-              child: const Text('Ingresar'),
+              child: _isLoading
+                  ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : const Text('Ingresar'),
             ),
           ),
         ),
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ),
         const SizedBox(height: 8),
         _staggered(
           3,
@@ -73,8 +149,8 @@ class LoginForm extends StatelessWidget {
             child: Text(
               '¿Olvidaste tu contraseña?',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.primaryDark,
-                  ),
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
         ),
