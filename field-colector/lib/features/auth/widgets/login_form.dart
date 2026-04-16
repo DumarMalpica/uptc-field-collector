@@ -1,5 +1,8 @@
+import 'package:field_colector/domain/entities/user.dart';
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LoginForm extends StatelessWidget {
   final Animation<double> animation;
@@ -56,7 +59,16 @@ class LoginForm extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: () {
+                context.read<Authprovider>().login(
+                      'dev-token',
+                      User(
+                        id: 'dev',
+                        userName: 'dev',
+                        role: 'user',
+                      ),
+                    );
+              },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryDark,
                 side: const BorderSide(color: AppColors.primaryDark),
