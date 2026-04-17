@@ -2,7 +2,7 @@ import '../../domain/entities/role.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/ports/auth_port.dart';
 
-/// Adaptador falso de autenticación
+/// Adaptador falso de autenticación por el momento, en espera de firebase
 /// Credenciales de prueba:
 ///   admin@citesa.co        / Admin2024!   → Administrador
 ///   profesional@citesa.co  / Field2024!   → Profesional
