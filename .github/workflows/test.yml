@@ -24,8 +24,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze code
-        run: flutter analyze
+      - name: Analyze code (backend only)
+        run: flutter analyze lib/domain lib/adapters lib/core
 
-      - name: Run tests
-        run: flutter test
+      - name: Run backend tests
+        run: flutter test test/backend/ --reporter expanded

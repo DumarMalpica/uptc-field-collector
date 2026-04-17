@@ -2,18 +2,22 @@ import '../../domain/entities/role.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/ports/auth_port.dart';
 
+/// ⚠️ FAKE ADAPTER — SOLO PARA DESARROLLO
+/// Nunca se usa en producción. Se reemplaza por FirebaseAuthAdapter.
+///
 /// Credenciales de prueba:
-///   profesional@citesa.co  / Field2024!  → Profesional
-///   usuario@citesa.co      / Field2024!  → Usuario
+///   admin@citesa.co    / Admin2024!  → Administrador
+///   usuario@citesa.co  / Field2024!  → Usuario
 class FakeAuthAdapter implements AuthPort {
   static final List<_FakeUser> _seed = [
     _FakeUser(
       id: 'fake-uid-001',
-      email: 'profesional@citesa.co',
-      password: 'Field2024!',
-      fullName: 'Carlos Biólogo',
-      role: Role.professional,
-      fieldStudy: 'Biología',
+      email: 'admin@citesa.co',
+      password: 'Admin2024!',
+      fullName: 'Administrador Citesa',
+      role: Role.admin,
+      fieldStudy: 'Administración',
+      graduated: true,
     ),
     _FakeUser(
       id: 'fake-uid-002',
@@ -22,6 +26,7 @@ class FakeAuthAdapter implements AuthPort {
       fullName: 'Ana Investigadora',
       role: Role.user,
       fieldStudy: 'Ecología',
+      graduated: false,
     ),
   ];
 
@@ -85,6 +90,7 @@ class FakeAuthAdapter implements AuthPort {
       fullName: fullName.trim(),
       role: Role.user,
       fieldStudy: fieldStudy,
+      graduated: false,
     );
 
     _runtime.add(newUser);
@@ -119,11 +125,13 @@ class _FakeUser {
   final String id;
   final String email;
 
-  /// SOLO PARA TEST
+  /// ⚠️ SOLO PARA TEST — nunca usar texto plano en producción.
+  /// Producción usa Firebase Auth que maneja el hashing internamente.
   final String password;
   final String fullName;
   final Role role;
   final String? fieldStudy;
+  final bool graduated;
 
   const _FakeUser({
     required this.id,
@@ -132,6 +140,7 @@ class _FakeUser {
     required this.fullName,
     required this.role,
     this.fieldStudy,
+    this.graduated = false,
   });
 
   User toUser({String? token, DateTime? tokenExpiry}) => User(
@@ -139,9 +148,10 @@ class _FakeUser {
     email: email,
     fullName: fullName,
     role: role,
+    fieldStudy: fieldStudy,
+    graduated: graduated,
     token: token,
     tokenExpiry: tokenExpiry,
-    fieldStudy: fieldStudy,
     createdAt: DateTime(2024, 1, 1),
   );
 }

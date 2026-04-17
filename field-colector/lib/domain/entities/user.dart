@@ -6,9 +6,11 @@ import 'role.dart';
 /// El [token] y [tokenExpiry] permiten validar sesión offline sin internet.
 /// El [fullName] autocompleta el campo "Observador" en todos los formularios.
 class User {
-  final String id;           // Firebase UID
+  final String id;          // Firebase UID
   final String email;
-  final String fullName;     // Antes: userName — renombrado para alinearse al diseño
+  final String fullName;
+  final String? fieldStudy;
+  final bool graduated;
   final Role role;
 
   /// JWT retornado por Firebase Auth. Guardado en Isar para validación offline.
@@ -18,7 +20,6 @@ class User {
   final DateTime? tokenExpiry;
 
   final bool isActive;
-  final String? fieldStudy;
   final DateTime? createdAt;
 
   const User({
@@ -26,16 +27,18 @@ class User {
     required this.email,
     required this.fullName,
     required this.role,
+    this.fieldStudy,
+    this.graduated = false,
     this.token,
     this.tokenExpiry,
     this.isActive = true,
-    this.fieldStudy,
     this.createdAt,
   });
 
+  /// Alias para compatibilidad con código existente que use .userName
   String get userName => fullName;
 
-  /// aqui valido si el token expira o no
+  /// Retorna true si el token existe y no ha expirado.
   bool get hasValidToken {
     if (token == null || tokenExpiry == null) return false;
     return DateTime.now().isBefore(tokenExpiry!);
@@ -47,22 +50,24 @@ class User {
     String? id,
     String? email,
     String? fullName,
+    String? fieldStudy,
+    bool? graduated,
     Role? role,
     String? token,
     DateTime? tokenExpiry,
     bool? isActive,
-    String? fieldStudy,
     DateTime? createdAt,
   }) {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
       fullName: fullName ?? this.fullName,
+      fieldStudy: fieldStudy ?? this.fieldStudy,
+      graduated: graduated ?? this.graduated,
       role: role ?? this.role,
       token: token ?? this.token,
       tokenExpiry: tokenExpiry ?? this.tokenExpiry,
       isActive: isActive ?? this.isActive,
-      fieldStudy: fieldStudy ?? this.fieldStudy,
       createdAt: createdAt ?? this.createdAt,
     );
   }

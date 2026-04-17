@@ -1,41 +1,56 @@
+/// Entidad pura de dominio — perfil de acceso dentro del sistema.
+/// Sin anotaciones de Isar ni dependencias de Flutter.
+///
+/// El sistema maneja dos roles:
+///   - [admin]: acceso total al sistema, puede crear/cerrar expediciones y exportar.
+///   - [user]: usuario base. Sus permisos de registro dependen de su
+///     membresía a una expedición, no de este rol.
 class Role {
   final String id;
   final String name;
   final List<String> permissions;
 
+  /// Cuando true, el usuario tiene acceso irrestricto sin importar permissions.
+  final bool isAdmin;
+
   const Role({
     required this.id,
     required this.name,
     required this.permissions,
+    this.isAdmin = false,
   });
 
   /// Verifica si este rol tiene un permiso específico.
+  /// Si isAdmin es true, siempre retorna true.
   bool hasPermission(String permission) {
+    if (isAdmin) return true;
     return permissions.contains(permission);
   }
 
   // ── Roles predefinidos del sistema ──────────────────────────────────────────
 
-  /// Profesional — puede crear expediciones, cerrarlas y exportar datos.
-  static const Role professional = Role(
-    id: 'professional',
-    name: 'Profesional',
-    permissions: ['create_outing', 'close_outing', 'export'],
+  /// Administrador — acceso total al sistema.
+  static const Role admin = Role(
+    id: 'admin',
+    name: 'Administrador',
+    permissions: [],
+    isAdmin: true,
   );
 
   /// Usuario base — sus permisos de registro dependen de su membresía
-  /// a una expedición
+  /// a una expedición, no de este rol.
   static const Role user = Role(
     id: 'user',
     name: 'Usuario',
     permissions: [],
+    isAdmin: false,
   );
 
   /// Retorna un Role por su id. Si no existe retorna [user] por defecto.
   static Role fromId(String id) {
     switch (id) {
-      case 'professional':
-        return professional;
+      case 'admin':
+        return admin;
       default:
         return user;
     }
