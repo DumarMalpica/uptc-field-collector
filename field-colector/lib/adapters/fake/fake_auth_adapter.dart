@@ -2,24 +2,13 @@ import '../../domain/entities/role.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/ports/auth_port.dart';
 
-/// Adaptador falso de autenticación por el momento, en espera de firebase
 /// Credenciales de prueba:
-///   admin@citesa.co        / Admin2024!   → Administrador
-///   profesional@citesa.co  / Field2024!   → Profesional
-///   campo@citesa.co        / Field2024!   → Investigador de campo
-///
+///   profesional@citesa.co  / Field2024!  → Profesional
+///   usuario@citesa.co      / Field2024!  → Usuario
 class FakeAuthAdapter implements AuthPort {
   static final List<_FakeUser> _seed = [
     _FakeUser(
       id: 'fake-uid-001',
-      email: 'admin@citesa.co',
-      password: 'Admin2024!',
-      fullName: 'Administrador Citesa',
-      role: Role.admin,
-      fieldStudy: 'Administración',
-    ),
-    _FakeUser(
-      id: 'fake-uid-002',
       email: 'profesional@citesa.co',
       password: 'Field2024!',
       fullName: 'Carlos Biólogo',
@@ -27,18 +16,16 @@ class FakeAuthAdapter implements AuthPort {
       fieldStudy: 'Biología',
     ),
     _FakeUser(
-      id: 'fake-uid-003',
-      email: 'campo@citesa.co',
+      id: 'fake-uid-002',
+      email: 'usuario@citesa.co',
       password: 'Field2024!',
       fullName: 'Ana Investigadora',
-      role: Role.fieldResearcher,
+      role: Role.user,
       fieldStudy: 'Ecología',
     ),
   ];
 
-  /// Usuarios creados en runtime durante la sesión actual.
   final List<_FakeUser> _runtime = [];
-
   User? _activeUser;
 
   @override
@@ -96,7 +83,7 @@ class FakeAuthAdapter implements AuthPort {
       email: normalizedEmail,
       password: password,
       fullName: fullName.trim(),
-      role: Role.fieldResearcher, // rol por defecto al registrarse, SE PUEDE CAMBIAR SI SE REQUIERE
+      role: Role.user,
       fieldStudy: fieldStudy,
     );
 
@@ -131,6 +118,8 @@ class FakeAuthAdapter implements AuthPort {
 class _FakeUser {
   final String id;
   final String email;
+
+  /// SOLO PARA TEST
   final String password;
   final String fullName;
   final Role role;

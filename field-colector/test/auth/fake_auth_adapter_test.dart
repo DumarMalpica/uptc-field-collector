@@ -8,34 +8,42 @@ void main() {
     setUp(() => adapter = FakeAuthAdapter());
 
     // ── Login ──────────────────────────────────────────────────────────────
-    /// admin, todos campos correctos----
-    test('login exitoso — admin', () async {
-      final user = await adapter.login('admin@citesa.co', 'Admin2024!');
-      expect(user.email, 'admin@citesa.co');
-      expect(user.role.isAdmin, isTrue);
+
+    test('login exitoso — profesional', () async {
+      final user = await adapter.login('profesional@citesa.co', 'Field2024!');
+      expect(user.email, 'profesional@citesa.co');
+      expect(user.role.id, 'professional');
       expect(user.hasValidToken, isTrue);
     });
 
-    test('login exitoso — profesional tiene permiso export', () async {
-      final user = await adapter.login('profesional@citesa.co', 'Field2024!');
-      expect(user.hasPermission('export'), isTrue);
-      expect(user.hasPermission('create_outing'), isTrue);
+    test('login exitoso — usuario base', () async {
+      final user = await adapter.login('usuario@citesa.co', 'Field2024!');
+      expect(user.email, 'usuario@citesa.co');
+      expect(user.role.id, 'user');
+      expect(user.hasValidToken, isTrue);
     });
 
-    test('login exitoso — investigador de campo no puede exportar', () async {
-      final user = await adapter.login('campo@citesa.co', 'Field2024!');
-      expect(user.hasPermission('create_record'), isTrue);
+    test('profesional tiene permisos de expedición y exportación', () async {
+      final user = await adapter.login('profesional@citesa.co', 'Field2024!');
+      expect(user.hasPermission('create_outing'), isTrue);
+      expect(user.hasPermission('close_outing'), isTrue);
+      expect(user.hasPermission('export'), isTrue);
+    });
+
+    test('usuario base no tiene permisos de expedición', () async {
+      final user = await adapter.login('usuario@citesa.co', 'Field2024!');
+      expect(user.hasPermission('create_outing'), isFalse);
       expect(user.hasPermission('export'), isFalse);
     });
 
     test('login normaliza email a minúsculas', () async {
-      final user = await adapter.login('ADMIN@CITESA.CO', 'Admin2024!');
-      expect(user.email, 'admin@citesa.co');
+      final user = await adapter.login('PROFESIONAL@CITESA.CO', 'Field2024!');
+      expect(user.email, 'profesional@citesa.co');
     });
 
     test('contraseña incorrecta lanza AuthException.invalidCredentials', () {
       expect(
-            () => adapter.login('admin@citesa.co', 'contraincorrectaa'),
+            () => adapter.login('profesional@citesa.co', 'mala'),
         throwsA(isA<AuthException>().having(
               (e) => e.type, 'type', AuthErrorType.invalidCredentials,
         )),
@@ -44,21 +52,21 @@ void main() {
 
     test('email inexistente lanza AuthException', () {
       expect(
-            () => adapter.login('aaaaa@citesa.co', 'abxdasd'),
+            () => adapter.login('noexiste@citesa.co', 'Field2024!'),
         throwsA(isA<AuthException>()),
       );
     });
 
     // ── Register ───────────────────────────────────────────────────────────
 
-    test('registro exitoso asigna rol field_researcher por defecto', () async {
+    test('registro exitoso asigna rol user por defecto', () async {
       final user = await adapter.register(
         email: 'nuevo@citesa.co',
         password: 'Nuevo2024!',
         fullName: 'Nuevo Usuario',
         fieldStudy: 'Geología',
       );
-      expect(user.role.id, 'field_researcher');
+      expect(user.role.id, 'user');
       expect(user.fieldStudy, 'Geología');
       expect(user.hasValidToken, isTrue);
     });
@@ -66,7 +74,7 @@ void main() {
     test('email duplicado lanza AuthException.emailAlreadyInUse', () {
       expect(
             () => adapter.register(
-          email: 'admin@citesa.co',
+          email: 'profesional@citesa.co',
           password: 'Otro2024!',
           fullName: 'Duplicado',
         ),
@@ -80,7 +88,7 @@ void main() {
       expect(
             () => adapter.register(
           email: 'debil@citesa.co',
-          password: '123',  ///muy corta
+          password: '123',
           fullName: 'Débil',
         ),
         throwsA(isA<AuthException>().having(
@@ -102,13 +110,13 @@ void main() {
     // ── Sesión ─────────────────────────────────────────────────────────────
 
     test('getCurrentUser retorna usuario activo tras login', () async {
-      await adapter.login('campo@citesa.co', 'Field2024!');
+      await adapter.login('usuario@citesa.co', 'Field2024!');
       final current = await adapter.getCurrentUser();
-      expect(current?.email, 'campo@citesa.co');
+      expect(current?.email, 'usuario@citesa.co');
     });
 
     test('logout limpia usuario activo', () async {
-      await adapter.login('admin@citesa.co', 'Admin2024!');
+      await adapter.login('profesional@citesa.co', 'Field2024!');
       await adapter.logout();
       expect(await adapter.getCurrentUser(), isNull);
     });
@@ -121,13 +129,6 @@ void main() {
 
     test('validateOfflineSession retorna null sin sesión', () async {
       expect(await adapter.validateOfflineSession(), isNull);
-    });
-
-    // ── Permisos ───────────────────────────────────────────────────────────
-
-    test('admin bypasea cualquier permiso por isAdmin = true', () async {
-      final admin = await adapter.login('admin@citesa.co', 'Admin2024!');
-      expect(admin.hasPermission('permiso_inventado'), isTrue);
     });
   });
 }

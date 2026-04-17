@@ -1,53 +1,43 @@
-/// perfil de acceso al sistema
 class Role {
   final String id;
   final String name;
   final List<String> permissions;
 
-  /// Cuando true, pasa a admin, tiene acceso a todo
-  final bool isAdmin;
-
   const Role({
     required this.id,
     required this.name,
     required this.permissions,
-    this.isAdmin = false,
   });
 
+  /// Verifica si este rol tiene un permiso específico.
   bool hasPermission(String permission) {
-    if (isAdmin) return true;
     return permissions.contains(permission);
   }
 
-/// ROLES ADMIN / PROFESIONAL / INVESTIGADOR DE CAMPO
-  static const Role admin = Role(
-    id: 'admin',
-    name: 'Administrador',
-    permissions: [],
-    isAdmin: true,
-  );
+  // ── Roles predefinidos del sistema ──────────────────────────────────────────
 
+  /// Profesional — puede crear expediciones, cerrarlas y exportar datos.
   static const Role professional = Role(
     id: 'professional',
     name: 'Profesional',
     permissions: ['create_outing', 'close_outing', 'export'],
   );
 
-  static const Role fieldResearcher = Role(
-    id: 'field_researcher',
-    name: 'Investigador de campo',
-    permissions: ['create_record', 'view_outing'],
+  /// Usuario base — sus permisos de registro dependen de su membresía
+  /// a una expedición
+  static const Role user = Role(
+    id: 'user',
+    name: 'Usuario',
+    permissions: [],
   );
 
-  /// Retorna un Role predefinido por su id  -PROXIMO PARA LA DB
+  /// Retorna un Role por su id. Si no existe retorna [user] por defecto.
   static Role fromId(String id) {
     switch (id) {
-      case 'admin':
-        return admin;
       case 'professional':
         return professional;
       default:
-        return fieldResearcher;
+        return user;
     }
   }
 
