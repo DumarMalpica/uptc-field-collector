@@ -96,7 +96,7 @@ class FakeAuthAdapter implements AuthPort {
       email: normalizedEmail,
       password: password,
       fullName: fullName.trim(),
-      role: Role.fieldResearcher, // rol por defecto al registrarse, SE PUEDE CAMBIAR SI SE REQUIERE (JOSELUIS)
+      role: Role.fieldResearcher, // rol por defecto al registrarse, SE PUEDE CAMBIAR SI SE REQUIERE
       fieldStudy: fieldStudy,
     );
 

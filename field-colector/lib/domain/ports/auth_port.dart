@@ -1,7 +1,7 @@
 import '../entities/user.dart';
 
 /// Puerto de autenticación.
-abstract class AuthPort {    /// NO SE PUEDE INSTANCIAR ABSTRACT
+abstract class AuthPort {
   /// Autentica con email y contraseña.
   /// Lanza [AuthException] si las credenciales son incorrectas.
   Future<User> login(String email, String password);
