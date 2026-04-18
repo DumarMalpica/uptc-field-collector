@@ -1,4 +1,5 @@
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/adapters/fake/fake_auth_adapter.dart';
 import 'package:field_colector/features/home/screens/home.dart';
 import 'package:field_colector/features/utilities/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -13,8 +14,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => Authprovider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => Authprovider(authPort: FakeAuthAdapter()),
+        ),
+      ],
       child: MaterialApp(
         title: 'Citesa Field Colector',
         debugShowCheckedModeBanner: false,
