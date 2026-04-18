@@ -1,0 +1,31 @@
+name: Run Flutter Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: field-colector
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze code (backend only)
+        run: flutter analyze lib/domain lib/adapters lib/core
+
+      - name: Run backend tests
+        run: flutter test test/backend/ --reporter expanded

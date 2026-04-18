@@ -64,8 +64,9 @@ class LoginForm extends StatelessWidget {
                       'dev-token',
                       User(
                         id: 'dev',
-                        userName: 'dev',
-                        role: 'user',
+                        email: 'dev@citesa.co',
+                        fullName: 'Developer',
+                        role: Role.user,
                       ),
                     );
               },
