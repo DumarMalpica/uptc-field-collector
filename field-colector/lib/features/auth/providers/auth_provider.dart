@@ -1,12 +1,13 @@
 import 'package:field_colector/domain/entities/user.dart';
 import 'package:field_colector/domain/mappers/login_user.dart';
+import 'package:field_colector/domain/mappers/register_user_dto_builder.dart';
 import 'package:field_colector/domain/ports/auth_port.dart';
 import 'package:flutter/material.dart';
 
 /// Estado de autenticación de la app: orquesta [AuthPort] (login, sesión, cierre).
 ///
-/// **Responsabilidad:** mantener [user] y notificar a la UI. No implementa
-/// registro — [AuthPort.register] vive en otro flujo. Persistencia de token
+/// **Responsabilidad:** mantener [user] y notificar a la UI. [register]
+/// delega en [AuthPort.register]. Persistencia de token
 /// y validación offline quedan en el **adaptador** inyectado, no en este
 /// provider.
 ///
@@ -79,6 +80,24 @@ class Authprovider extends ChangeNotifier {
       _user = null;
       _setErrorMessage(e.message);
       // TODO: exponer AuthException.type en UI (SnackBar por red vs credenciales).
+    }
+  }
+
+  /// Registro vía [AuthPort]; en éxito deja sesión como [login].
+  Future<void> register(RegisterUserDto dto) async {
+    try {
+      final domainUser = await _authPort.register(
+        email: dto.email,
+        password: dto.password,
+        fullName: dto.fullName,
+        fieldStudy: dto.fieldOfStudy,
+      );
+      _setUser(domainUser);
+      _errorMessage = null;
+      notifyListeners();
+    } on AuthException catch (e) {
+      _user = null;
+      _setErrorMessage(e.message);
     }
   }
 
