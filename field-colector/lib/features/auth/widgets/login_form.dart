@@ -1,6 +1,7 @@
 import 'package:field_colector/domain/entities/user.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
+import 'package:field_colector/domain/entities/role.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
