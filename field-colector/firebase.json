@@ -1,0 +1,1 @@
+{"flutter":{"platforms":{"android":{"default":{"projectId":"uptc-field-collector","appId":"1:462845776:android:74e03369c9dad3e5971e55","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"uptc-field-collector","configurations":{"android":"1:462845776:android:74e03369c9dad3e5971e55","ios":"1:462845776:ios:2c06d87e99c72a2e971e55"}}}}}}

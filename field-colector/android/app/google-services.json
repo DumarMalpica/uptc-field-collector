@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "462845776",
+    "project_id": "uptc-field-collector",
+    "storage_bucket": "uptc-field-collector.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462845776:android:74e03369c9dad3e5971e55",
+        "android_client_info": {
+          "package_name": "com.citesa.field_colector"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFpoUGzNNxpuxsLnPwWSY59AFESVsteQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
