@@ -29,7 +29,6 @@ echo ""
 echo "Esperando 15 segundos para que Google sincronice el proyecto en sus servidores..."
 sleep 15
 
-# 5. Configurar FlutterFire automáticamente
 echo ""
 echo "Registrando las apps de Android/iOS y descargando claves..."
 flutterfire configure \
