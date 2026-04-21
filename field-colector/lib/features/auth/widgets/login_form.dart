@@ -1,20 +1,42 @@
-import 'package:field_colector/domain/entities/user.dart';
+import 'package:field_colector/domain/mappers/login_user.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/domain/entities/role.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class LoginForm extends StatelessWidget {
+class LoginForm extends StatefulWidget {
+  const LoginForm({super.key, required this.animation});
+
   final Animation<double> animation;
 
-  const LoginForm({super.key, required this.animation});
+  @override
+  State<LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<LoginForm> {
+  late final TextEditingController _userController;
+  late final TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _userController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _userController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Widget _staggered(int index, Widget child) {
     final start = index * 0.2;
     final end = (start + 0.4).clamp(0.0, 1.0);
     final curved = CurvedAnimation(
-      parent: animation,
+      parent: widget.animation,
       curve: Interval(start, end, curve: Curves.easeOut),
     );
     return FadeTransition(
@@ -36,8 +58,9 @@ class LoginForm extends StatelessWidget {
       children: [
         _staggered(
           0,
-          const TextField(
-            decoration: InputDecoration(
+          TextField(
+            controller: _userController,
+            decoration: const InputDecoration(
               labelText: 'Usuario',
               prefixIcon: Icon(Icons.person_outline),
             ),
@@ -46,9 +69,10 @@ class LoginForm extends StatelessWidget {
         const SizedBox(height: 16),
         _staggered(
           1,
-          const TextField(
+          TextField(
+            controller: _passwordController,
             obscureText: true,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Contraseña',
               suffixIcon: Icon(Icons.visibility_off_outlined),
             ),
@@ -62,14 +86,11 @@ class LoginForm extends StatelessWidget {
             child: OutlinedButton(
               onPressed: () {
                 context.read<Authprovider>().login(
-                      'dev-token',
-                      User(
-                        id: 'dev',
-                        email: 'dev@citesa.co',
-                        fullName: 'Developer',
-                        role: Role.user,
-                      ),
-                    );
+                  LoginUser(
+                    email: _userController.text,
+                    password: _passwordController.text,
+                  ),
+                );
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryDark,
@@ -86,9 +107,9 @@ class LoginForm extends StatelessWidget {
             onPressed: () {},
             child: Text(
               '¿Olvidaste tu contraseña?',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.primaryDark,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.primaryDark),
             ),
           ),
         ),

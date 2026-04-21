@@ -1,9 +1,10 @@
 import 'package:field_colector/data/careers_asset.dart';
 import 'package:field_colector/domain/mappers/register_user_dto_builder.dart';
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -27,6 +28,7 @@ class _RegisterFormState extends State<RegisterForm> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isSubmitting = false;
 
   void _onFormEdited() => setState(() {});
 
@@ -87,7 +89,7 @@ class _RegisterFormState extends State<RegisterForm> {
     return true;
   }
 
-  void _onRegisterPressed() {
+  Future<void> _onRegisterPressed() async {
     final dto = buildRegisterUserDto(
       firstName: _firstNameController.text,
       lastName: _lastNameController.text,
@@ -99,38 +101,23 @@ class _RegisterFormState extends State<RegisterForm> {
       otherCareer: _otherCareer,
     );
     if (dto == null) return;
-    _submitRegistration(dto);
+    await _submitRegistration(dto);
   }
 
-  void _submitRegistration(RegisterUserDto dto) async {
-    print("Intentando registrar a ${dto.email}");
-
+  Future<void> _submitRegistration(RegisterUserDto dto) async {
+    setState(() => _isSubmitting = true);
+    final auth = context.read<Authprovider>();
     try {
-      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: dto.email,
-        password: dto.password,
-      );
-
-      print("Usuario creado en Firebase con UID: ${userCredential.user?.uid}");
-
-      if (mounted) {
+      await auth.register(dto);
+      if (!mounted) return;
+      final err = auth.errorMessage;
+      if (err != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Registro exitoso!')),
+          SnackBar(content: Text(err)),
         );
       }
-
-    } on FirebaseAuthException catch (e) {
-      print("Error de Firebase: ${e.message}");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.message}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } catch (e) {
-      print("❌ Error desconocido: $e");
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -295,12 +282,18 @@ class _RegisterFormState extends State<RegisterForm> {
         AppStyles.gapLg,
 
         OutlinedButton(
-          onPressed: _canSubmit() ? _onRegisterPressed : null,
+          onPressed: _canSubmit() && !_isSubmitting ? _onRegisterPressed : null,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primaryDark,
             side: const BorderSide(color: AppColors.primaryDark),
           ),
-          child: const Text('Registrarse'),
+          child: _isSubmitting
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Registrarse'),
         ),
       ],
     );
