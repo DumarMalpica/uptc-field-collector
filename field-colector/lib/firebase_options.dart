@@ -51,18 +51,18 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: '',
-    appId: '1:92619504986:android:0fe4479bf2e21cf02d4763',
-    messagingSenderId: '92619504986',
-    projectId: 'uptc-fields-collector',
-    storageBucket: 'uptc-fields-collector.firebasestorage.app',
+    appId: '1:575817537339:android:b3a7ddf30ccdbe208a091e',
+    messagingSenderId: '575817537339',
+    projectId: 'uptc-ffield-collector',
+    storageBucket: 'uptc-ffield-collector.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: '',
-    appId: '1:92619504986:ios:73a571d17788a9bd2d4763',
-    messagingSenderId: '92619504986',
-    projectId: 'uptc-fields-collector',
-    storageBucket: 'uptc-fields-collector.firebasestorage.app',
+    appId: '1:575817537339:ios:021c49c723a974988a091e',
+    messagingSenderId: '575817537339',
+    projectId: 'uptc-ffield-collector',
+    storageBucket: 'uptc-ffield-collector.firebasestorage.app',
     iosBundleId: 'com.citesa.fieldColector',
   );
 }
