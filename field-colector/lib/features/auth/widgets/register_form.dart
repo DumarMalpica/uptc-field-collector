@@ -3,6 +3,7 @@ import 'package:field_colector/domain/mappers/register_user_dto_builder.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -101,8 +102,36 @@ class _RegisterFormState extends State<RegisterForm> {
     _submitRegistration(dto);
   }
 
-  void _submitRegistration(RegisterUserDto dto) {
-    // TODO: call Firebase (or repository) with [dto].
+  void _submitRegistration(RegisterUserDto dto) async {
+    print("Intentando registrar a ${dto.email}");
+
+    try {
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: dto.email,
+        password: dto.password,
+      );
+
+      print("Usuario creado en Firebase con UID: ${userCredential.user?.uid}");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Registro exitoso!')),
+        );
+      }
+
+    } on FirebaseAuthException catch (e) {
+      print("Error de Firebase: ${e.message}");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.message}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      print("❌ Error desconocido: $e");
+    }
   }
 
   @override
