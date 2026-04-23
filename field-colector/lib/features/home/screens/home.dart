@@ -1,3 +1,5 @@
+import 'package:field_colector/adapters/geolocator_provider.dart';
+import 'package:field_colector/domain/ports/locator_provider.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/auth/screens/login.dart';
 import 'package:field_colector/features/dashboard/screens/dashboard.dart';
@@ -13,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final LocatorProvider _locator = GeolocatorProvider();
+
   @override
   void initState() {
     super.initState();
@@ -32,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return LoginScreen();
         }
 
-        return DashboardScreen();
+        return DashboardScreen(locator: _locator);
       },
     );
   }
