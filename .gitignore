@@ -67,3 +67,5 @@ app.*.map.json
 # Environment / secrets
 *.env
 .env.*
+
+field-colector/android/app/google-services.json
