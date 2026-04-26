@@ -29,15 +29,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return android;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -50,20 +44,21 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static FirebaseOptions get android => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_API_KEY_ANDROID'] ?? '',
-    appId: '1:575817537339:android:b3a7ddf30ccdbe208a091e',
-    messagingSenderId: '575817537339',
-    projectId: 'uptc-ffield-collector',
-    storageBucket: 'uptc-ffield-collector.firebasestorage.app',
-  );
-
-  static FirebaseOptions get ios => FirebaseOptions(
-    apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyD40TZDsBtoWyte25KVRuFJa6lt2m9hwYE',
     appId: '1:575817537339:ios:021c49c723a974988a091e',
     messagingSenderId: '575817537339',
     projectId: 'uptc-ffield-collector',
     storageBucket: 'uptc-ffield-collector.firebasestorage.app',
     iosBundleId: 'com.citesa.fieldColector',
   );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDeB54wziGJRDt7zE4YBRaEfR1HVI2Wirw',
+    appId: '1:575817537339:android:b3a7ddf30ccdbe208a091e',
+    messagingSenderId: '575817537339',
+    projectId: 'uptc-ffield-collector',
+    storageBucket: 'uptc-ffield-collector.firebasestorage.app',
+  );
+
 }
