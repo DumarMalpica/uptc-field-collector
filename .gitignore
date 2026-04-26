@@ -69,3 +69,4 @@ app.*.map.json
 .env.*
 
 field-colector/android/app/google-services.json
+lib/features/auth/providers/auth_provider_local.dart
