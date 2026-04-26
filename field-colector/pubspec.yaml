@@ -40,8 +40,8 @@ dependencies:
   geolocator: ^14.0.2
   firebase_core: ^4.7.0
   firebase_auth: ^6.4.0
-  isar: ^3.1.0
-  isar_flutter_libs: ^3.1.0
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
   flutter_dotenv: ^6.0.1
   flutter_map: ^8.3.0
   flutter_map_tile_caching: ^10.1.1
