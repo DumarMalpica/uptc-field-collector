@@ -44,8 +44,8 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD40TZDsBtoWyte25KVRuFJa6lt2m9hwYE',
+  static FirebaseOptions ios = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
     appId: '1:575817537339:ios:021c49c723a974988a091e',
     messagingSenderId: '575817537339',
     projectId: 'uptc-ffield-collector',
@@ -53,8 +53,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.citesa.fieldColector',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDeB54wziGJRDt7zE4YBRaEfR1HVI2Wirw',
+  static FirebaseOptions android = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_API_KEY_ANDROID'] ?? '',
     appId: '1:575817537339:android:b3a7ddf30ccdbe208a091e',
     messagingSenderId: '575817537339',
     projectId: 'uptc-ffield-collector',
