@@ -22,7 +22,6 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       'participantIds': item.participantIds,
       'status': item.status,
       'syncStatus': item.syncStatus,
-      'userId': item.userId,
     });
   }
 
@@ -77,7 +76,6 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       participantIds: List<String>.from(data['participantIds'] ?? []),
       status: data['status'] ?? 'active',
       syncStatus: data['syncStatus'] ?? 'synced',
-      userId: data['userId'] ?? '',
     );
   }
 }
