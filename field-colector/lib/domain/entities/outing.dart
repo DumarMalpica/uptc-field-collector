@@ -11,6 +11,7 @@ class Outing {
   final List<String> participantIds;
   final String status;
   final String syncStatus;
+  final String userId;
 
   Outing({
     required this.id,
@@ -25,5 +26,6 @@ class Outing {
     required this.participantIds,
     required this.status,
     required this.syncStatus,
+    required this.userId,
   });
 }
