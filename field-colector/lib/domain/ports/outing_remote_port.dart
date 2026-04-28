@@ -7,6 +7,7 @@ abstract class OutingRemotePort {
   Future<void> deleteOuting(String id);
   Future<Outing?> getOutingById(String id);
   Future<OutingSearchResult> getOutings({int limit = 20, DocumentSnapshot? lastDocument});
+  Future<OutingSearchResult> getOutingsByCreatorId(String userId, {int limit = 20, DocumentSnapshot? lastDocument});
 }
 
 class OutingSearchResult {

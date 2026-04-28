@@ -61,6 +61,27 @@ class FirebaseOutingAdapter implements OutingRemotePort {
     );
   }
 
+  @override
+  Future<OutingSearchResult> getOutingsByCreatorId(String userId, {
+    int limit = 20,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    Query query = _firestore.collection(_collection)
+        .where('createdById', isEqualTo: userId)
+        .limit(limit);
+
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+
+    final snapshot = await query.get();
+
+    return OutingSearchResult(
+      items: snapshot.docs.map((doc) => _mapSnapshotToOuting(doc)).toList(),
+      lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+    );
+  }
+
   Outing _mapSnapshotToOuting(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Outing(
