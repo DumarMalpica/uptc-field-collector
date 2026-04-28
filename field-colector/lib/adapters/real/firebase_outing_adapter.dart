@@ -22,6 +22,7 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       'participantIds': item.participantIds,
       'status': item.status,
       'syncStatus': item.syncStatus,
+      'pendingUsers': item.pendingUsers.map((u) => u.toMap()).toList(),
     });
   }
 
@@ -97,6 +98,45 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       participantIds: List<String>.from(data['participantIds'] ?? []),
       status: data['status'] ?? 'active',
       syncStatus: data['syncStatus'] ?? 'synced',
+      pendingUsers: (data['pendingUsers'] as List<dynamic>?)
+          ?.map((e) => PendingUser.fromMap(e as Map<String, dynamic>))
+          .toList() ?? [],
     );
+  }
+
+  @override
+  Future<void> addPendingUserToOuting(String outingId, PendingUser user) async {
+    await _firestore.collection(_collection).doc(outingId).update({
+      'pendingUsers': FieldValue.arrayUnion([user.toMap()]),
+    });
+  }
+
+  @override
+  Future<void> removePendingUserFromOuting(String outingId, String userId) async {
+    final doc = await _firestore.collection(_collection).doc(outingId).get();
+    if (!doc.exists) return;
+    
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+    
+    final pendingList = List<dynamic>.from(data['pendingUsers'] ?? []);
+    pendingList.removeWhere((e) => e is Map && e['id'] == userId);
+    
+    await _firestore.collection(_collection).doc(outingId).update({
+      'pendingUsers': pendingList,
+    });
+  }
+
+  @override
+  Future<List<PendingUser>> getPendingUsersByOutingId(String outingId) async {
+    final doc = await _firestore.collection(_collection).doc(outingId).get();
+    if (!doc.exists) return [];
+    
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return [];
+    
+    return (data['pendingUsers'] as List<dynamic>?)
+        ?.map((e) => PendingUser.fromMap(e as Map<String, dynamic>))
+        .toList() ?? [];
   }
 }

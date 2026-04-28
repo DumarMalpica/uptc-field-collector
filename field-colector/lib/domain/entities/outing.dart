@@ -1,3 +1,31 @@
+class PendingUser {
+  final String id;
+  final String name;
+  final String email;
+
+  PendingUser({
+    required this.id,
+    required this.name,
+    required this.email,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+    };
+  }
+
+  factory PendingUser.fromMap(Map<String, dynamic> map) {
+    return PendingUser(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      email: map['email'] ?? '',
+    );
+  }
+}
+
 class Outing {
   final String id;
   final String prefix;
@@ -11,6 +39,7 @@ class Outing {
   final List<String> participantIds;
   final String status;
   final String syncStatus;
+  final List<PendingUser> pendingUsers;
 
   Outing({
     required this.id,
@@ -25,5 +54,6 @@ class Outing {
     required this.participantIds,
     required this.status,
     required this.syncStatus,
+    this.pendingUsers = const [],
   });
 }
