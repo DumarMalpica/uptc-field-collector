@@ -1,5 +1,6 @@
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/features/expeditions/data/fake_expeditions_data.dart';
+import 'package:field_colector/features/expeditions/screens/expedition_create_screen.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_detail_screen.dart';
 import 'package:field_colector/features/expeditions/widgets/expedition_card.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
@@ -28,6 +29,9 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
   /// Cuando no es null, se muestra el detalle de esta expedición.
   Outing? _detailOuting;
 
+  /// Cuando es true, se muestra la pantalla de creación.
+  bool _showCreate = false;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -53,6 +57,13 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ── Create mode ──
+    if (_showCreate) {
+      return ExpeditionCreateScreen(
+        onBack: () => setState(() => _showCreate = false),
+      );
+    }
+
     // ── Detail mode ──
     if (_detailOuting != null) {
       return ExpeditionDetailScreen(
@@ -67,27 +78,43 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
         // ── Search bar ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            controller: _searchController,
-            onChanged: (v) => setState(() => _searchQuery = v),
-            decoration: InputDecoration(
-              hintText: 'Buscar expedición...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar expedición...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: () => setState(() => _showCreate = true),
+                icon: const Icon(Icons.add, size: 22),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textOnPrimary,
+                ),
+                tooltip: 'Nueva expedición',
+              ),
+            ],
           ),
         ),
 
