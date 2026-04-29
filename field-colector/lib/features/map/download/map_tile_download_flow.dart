@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 /// Orquestación de **descarga de teselas** (diálogo + [DownloadMapUseCase]).
@@ -14,7 +13,7 @@ import 'package:flutter/material.dart';
 class MapTileDownloadFlow {
   MapTileDownloadFlow._();
 
-  /// Muestra diálogo (nombre + radio).
+  /// Muestra diálogo (nombre + radio) y ejecuta descarga alrededor de [centerLat]/[centerLon].
   ///
   /// Retorna `(nombre, radio)` si OK; `null` si usuario cancela.
   static Future<(String, double)?> showDownloadDialog({

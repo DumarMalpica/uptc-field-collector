@@ -4,6 +4,7 @@ import 'package:field_colector/features/expeditions/data/fake_expeditions_data.d
 import 'package:field_colector/features/map/download/map_tile_download_flow.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -39,15 +40,14 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
 
   User? _resolveUser(String id) => kFakeUsers[id];
 
-  bool get _isOwner => _outing.createdById == kCurrentUserId;
+  bool _isOwner(String currentUserId) => _outing.createdById == currentUserId;
 
-  bool get _alreadyPending =>
-      _outing.pendingUsers.any((u) => u.id == kCurrentUserId);
+  bool _alreadyPending(String currentUserId) =>
+      _outing.pendingUsers.any((u) => u.id == currentUserId);
 
-  bool get _isParticipant => _outing.participantIds.contains(kCurrentUserId);
+  bool _isParticipant(String currentUserId) => _outing.participantIds.contains(currentUserId);
 
-  void _requestJoin() {
-    final currentUser = kFakeUsers[kCurrentUserId];
+  void _requestJoin(User? currentUser) {
     if (currentUser == null) return;
 
     setState(() {
@@ -84,6 +84,29 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  void _acceptUser(PendingUser pu) {
+    setState(() {
+      _outing = Outing(
+        id: _outing.id,
+        prefix: _outing.prefix,
+        name: _outing.name,
+        location: _outing.location,
+        zone: _outing.zone,
+        reason: _outing.reason,
+        latitude: _outing.latitude,
+        longitude: _outing.longitude,
+        altitude: _outing.altitude,
+        startDate: _outing.startDate,
+        endDate: _outing.endDate,
+        createdById: _outing.createdById,
+        participantIds: [..._outing.participantIds, pu.id],
+        status: _outing.status,
+        syncStatus: _outing.syncStatus,
+        pendingUsers: _outing.pendingUsers.where((u) => u.id != pu.id).toList(),
+      );
+    });
   }
 
   Future<void> _downloadMap() async {
@@ -131,6 +154,8 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = context.watch<Authprovider>().user;
+    final currentUserId = currentUser?.id ?? '';
     final dateFormat = DateFormat('dd MMM yyyy', 'es');
     final director = _resolveUser(_outing.createdById);
 
@@ -251,6 +276,12 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
                     icon: Icons.hourglass_empty,
                     label: pu.name,
                     subtitle: pu.email,
+                    trailing: _isOwner(currentUserId)
+                        ? IconButton(
+                            icon: const Icon(Icons.check_circle, color: AppColors.primary),
+                            onPressed: () => _acceptUser(pu),
+                          )
+                        : null,
                   ),
                 ),
 
@@ -308,15 +339,15 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               const SizedBox(height: 8),
 
               // Solicitar unirse (solo si no eres propietario ni participante)
-              if (!_isOwner && !_isParticipant) ...[
+              if (!_isOwner(currentUserId) && !_isParticipant(currentUserId)) ...[
                 ElevatedButton.icon(
-                  onPressed: _alreadyPending ? null : _requestJoin,
+                  onPressed: _alreadyPending(currentUserId) ? null : () => _requestJoin(currentUser),
                   icon: Icon(
-                    _alreadyPending ? Icons.check : Icons.person_add,
+                    _alreadyPending(currentUserId) ? Icons.check : Icons.person_add,
                     size: 18,
                   ),
                   label: Text(
-                    _alreadyPending ? 'Pendiente' : 'Solicitar unirse',
+                    _alreadyPending(currentUserId) ? 'Pendiente' : 'Solicitar unirse',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -410,11 +441,13 @@ class _InfoRow extends StatelessWidget {
     required this.icon,
     required this.label,
     this.subtitle,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final String? subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -447,6 +480,7 @@ class _InfoRow extends StatelessWidget {
               ],
             ),
           ),
+          if (trailing != null) trailing!,
         ],
       ),
     );
