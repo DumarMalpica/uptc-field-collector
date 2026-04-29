@@ -1,0 +1,123 @@
+{
+  "form_id": "modulo_rocas",
+  "title": "Registro de Rocas",
+  "fields": [
+    {
+      "field_id": "tipo_roca",
+      "label": "Tipo de roca",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 1,
+      "options": [
+        { "label": "Ígnea", "value": "ignea" },
+        { "label": "Sedimentaria", "value": "sedimentaria" },
+        { "label": "Metamórfica", "value": "metamorfica" },
+        { 
+          "label": "Otro (especificar)", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "tipo_roca_otro"
+        }
+      ]
+    },
+    {
+      "field_id": "tipo_roca_otro",
+      "label": "Especifique el otro tipo de roca",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 2
+    },
+    {
+      "field_id": "color_predominante",
+      "label": "Color predominante",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 3,
+      "options": [
+        { "label": "Gris", "value": "gris" },
+        { "label": "Negro", "value": "negro" },
+        { "label": "Blanco", "value": "blanco" },
+        { "label": "Rojizo", "value": "rojizo" },
+        { "label": "Verdoso", "value": "verdoso" },
+        { "label": "Marrón", "value": "marron" }
+      ]
+    },
+    {
+      "field_id": "textura_roca",
+      "label": "Textura de la roca",
+      "type": "multi_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 4,
+      "options": [
+        { "label": "Grano fino", "value": "grano_fino" },
+        { "label": "Grano medio", "value": "grano_medio" },
+        { "label": "Grano grueso", "value": "grano_grueso" },
+        { "label": "Porosa", "value": "porosa" },
+        { "label": "Masiva", "value": "masiva" }
+      ]
+    },
+    {
+      "field_id": "estructura_roca",
+      "label": "Estructura de la roca",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 5,
+      "options": [
+        { "label": "Estratificada", "value": "estratificada" },
+        { "label": "Masiva", "value": "masiva" },
+        { "label": "Fracturada", "value": "fracturada" }
+      ]
+    },
+    {
+      "field_id": "dureza_roca",
+      "label": "Dureza de la roca",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 6,
+      "options": [
+        { "label": "Muy dura", "value": "muy_dura" },
+        { "label": "Dura", "value": "dura" },
+        { "label": "Media", "value": "media" },
+        { "label": "Blanda", "value": "blanda" }
+      ]
+    },
+    {
+      "field_id": "minerales_presentes",
+      "label": "Minerales presentes a simple vista",
+      "type": "text_long",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 7
+    },
+    {
+      "field_id": "profundidad_cm",
+      "label": "Profundidad de toma de muestra (cm)",
+      "type": "number_decimal",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 8
+    },
+    {
+      "field_id": "observaciones_adicionales",
+      "label": "Observaciones adicionales",
+      "type": "text_long",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 9
+    },
+    {
+      "field_id": "fotografia_roca",
+      "label": "Fotografía (Incluir escala visual)",
+      "type": "image_capture",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 10
+    }
+  ]
+}

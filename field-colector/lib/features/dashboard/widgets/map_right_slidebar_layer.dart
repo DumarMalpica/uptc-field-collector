@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Secciones disponibles en el sidebar.
 enum SidebarSection {
@@ -23,10 +22,14 @@ class MapRightSlidebarLayer extends StatelessWidget {
     super.key,
     required this.slideAnimation,
     required this.onBackdropTap,
+    this.child,
   });
 
   final Animation<Offset> slideAnimation;
   final VoidCallback onBackdropTap;
+
+  /// Contenido que se muestra dentro del panel deslizable.
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +58,8 @@ class MapRightSlidebarLayer extends StatelessWidget {
                 child: Material(
                   elevation: 10,
                   surfaceTintColor: colors.surfaceTint,
-                  child: const SafeArea(
-                    child: SizedBox.expand(),
+                  child: SafeArea(
+                    child: child ?? const SizedBox.expand(),
                   ),
                 ),
               ),

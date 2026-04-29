@@ -1,5 +1,6 @@
 import 'package:field_colector/domain/ports/locator_provider.dart';
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
+import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
 import 'package:field_colector/features/map/screens/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -32,15 +33,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       vsync: this,
       duration: const Duration(milliseconds: 280),
     );
-    _sidebarSlide = Tween<Offset>(
-      begin: const Offset(1, 0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _sidebarController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _sidebarSlide = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _sidebarController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
   }
 
   @override
@@ -73,6 +72,22 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (!_sidebarOpen) _openSidebar();
   }
 
+  Widget _buildSectionContent() {
+    switch (_activeSection) {
+      case SidebarSection.expeditions:
+        return const ExpeditionListScreen();
+      case SidebarSection.home:
+      case SidebarSection.profile:
+      case SidebarSection.settings:
+        return Center(
+          child: Text(
+            _activeSection.label,
+            style: const TextStyle(fontSize: 16, color: Colors.black54),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top + 8;
@@ -84,10 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          MapScreen(
-            locator: widget.locator,
-            embedded: true,
-          ),
+          MapScreen(locator: widget.locator, embedded: true),
           ListenableBuilder(
             listenable: _sidebarController,
             builder: (context, _) {
@@ -97,6 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               return MapRightSlidebarLayer(
                 slideAnimation: _sidebarSlide,
                 onBackdropTap: _closeSidebar,
+                child: _buildSectionContent(),
               );
             },
           ),
@@ -169,4 +182,3 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 }
-

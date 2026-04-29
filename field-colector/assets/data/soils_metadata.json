@@ -1,0 +1,145 @@
+{
+  "form_id": "modulo_suelos",
+  "title": "Registro de Suelos",
+  "fields": [
+    {
+      "field_id": "tipo_suelo",
+      "label": "Tipo de Suelo",
+      "type": "multi_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 1,
+      "options": [
+        { "label": "Arena", "value": "arena" },
+        { "label": "Limo", "value": "limo" },
+        { "label": "Arcilla", "value": "arcilla" },
+        { "label": "Suelo orgánico", "value": "suelo_organico" },
+        { "label": "Mezcla", "value": "mezcla" },
+        { 
+          "label": "Otro (especificar)", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "tipo_suelo_otro"
+        }
+      ]
+    },
+    {
+      "field_id": "tipo_suelo_otro",
+      "label": "Especifique el otro tipo de suelo",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 2
+    },
+    {
+      "field_id": "color_predominante",
+      "label": "Color predominante del suelo",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 3,
+      "options": [
+        { "label": "Marrón", "value": "marron" },
+        { "label": "Grisáceo", "value": "grisaceo" },
+        { "label": "Rojizo", "value": "rojizo" },
+        { "label": "Amarillento", "value": "amarillento" },
+        { "label": "Negruzco", "value": "negruzco" }
+      ]
+    },
+    {
+      "field_id": "variabilidad_colores",
+      "label": "Variabilidad de colores (Otros tonos)",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 4
+    },
+    {
+      "field_id": "textura_suelo",
+      "label": "Textura del suelo",
+      "type": "multi_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 5,
+      "options": [
+        { "label": "Fina", "value": "fina" },
+        { "label": "Media", "value": "media" },
+        { "label": "Granular", "value": "granular" },
+        { "label": "Pulverulenta", "value": "pulverulenta" },
+        { 
+          "label": "Otro (especificar)", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "textura_suelo_otro"
+        }
+      ]
+    },
+    {
+      "field_id": "textura_suelo_otro",
+      "label": "Especifique la otra textura",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 6
+    },
+    {
+      "field_id": "estructura_suelo",
+      "label": "Estructura del suelo",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 7,
+      "options": [
+        { "label": "Grumosa", "value": "grumosa" },
+        { "label": "Plana", "value": "plana" },
+        { "label": "Masiva", "value": "masiva" },
+        { 
+          "label": "Otro (especificar)", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "estructura_suelo_otro"
+        }
+      ]
+    },
+    {
+      "field_id": "estructura_suelo_otro",
+      "label": "Especifique la otra estructura",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 8
+    },
+    {
+      "field_id": "perfil_suelo",
+      "label": "Perfil del suelo (Horizontes observados)",
+      "type": "text_long",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 9
+    },
+    {
+      "field_id": "profundidad_cm",
+      "label": "Profundidad de toma de muestra (cm)",
+      "type": "number_decimal",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 10
+    },
+    {
+      "field_id": "observaciones_adicionales",
+      "label": "Observaciones adicionales",
+      "type": "text_long",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 11
+    },
+    {
+      "field_id": "fotografia_suelo",
+      "label": "Fotografía de la muestra/sitio",
+      "type": "image_capture",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 12
+    }
+  ]
+}
