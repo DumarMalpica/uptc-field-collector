@@ -122,7 +122,7 @@ class FirebaseOutingAdapter implements OutingRemotePort {
     final doc = await _firestore.collection(_collection).doc(outingId).get();
     if (!doc.exists) return;
     
-    final data = doc.data() as Map<String, dynamic>?;
+    final data = doc.data();
     if (data == null) return;
     
     final pendingList = List<dynamic>.from(data['pendingUsers'] ?? []);
@@ -138,7 +138,7 @@ class FirebaseOutingAdapter implements OutingRemotePort {
     final doc = await _firestore.collection(_collection).doc(outingId).get();
     if (!doc.exists) return [];
     
-    final data = doc.data() as Map<String, dynamic>?;
+    final data = doc.data();
     if (data == null) return [];
     
     return (data['pendingUsers'] as List<dynamic>?)
