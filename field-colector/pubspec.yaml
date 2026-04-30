@@ -52,6 +52,7 @@ dependencies:
   connectivity_plus: ^6.1.4
   intl: ^0.20.2
   geocoding: ^3.0.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   mockito: ^5.4.4
