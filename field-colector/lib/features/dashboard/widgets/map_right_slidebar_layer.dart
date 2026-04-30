@@ -40,21 +40,11 @@ class MapRightSlidebarLayer extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: w * 0.1,
-            child: GestureDetector(
-              onTap: onBackdropTap,
-              behavior: HitTestBehavior.opaque,
-              child: ColoredBox(
-                color: Colors.black.withValues(alpha: 0.28),
-              ),
-            ),
-          ),
           ClipRect(
             child: SlideTransition(
               position: slideAnimation,
               child: SizedBox(
-                width: w * 0.9,
+                width: w - 52,
                 child: Material(
                   elevation: 10,
                   surfaceTintColor: colors.surfaceTint,
@@ -62,6 +52,15 @@ class MapRightSlidebarLayer extends StatelessWidget {
                     child: child ?? const SizedBox.expand(),
                   ),
                 ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: onBackdropTap,
+              behavior: HitTestBehavior.opaque,
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.28),
               ),
             ),
           ),
@@ -87,17 +86,25 @@ class SidebarIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return IconButton(
-      style: IconButton.styleFrom(
-        backgroundColor: isActive
-            ? colors.primaryContainer
-            : colors.surfaceContainerHigh,
-      ),
-      onPressed: onTap,
-      icon: Icon(
-        icon,
-        size: 24,
-        color: isActive ? colors.primary : colors.onSurface,
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        style: IconButton.styleFrom(
+          backgroundColor: isActive
+              ? colors.primaryContainer
+              : colors.surfaceContainerHigh,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: onTap,
+        icon: Icon(
+          icon,
+          size: 20,
+          color: isActive ? colors.primary : colors.onSurface,
+        ),
       ),
     );
   }
