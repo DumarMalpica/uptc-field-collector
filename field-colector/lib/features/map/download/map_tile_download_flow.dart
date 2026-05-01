@@ -1,4 +1,3 @@
-import 'package:field_colector/features/map/map_services.dart';
 import 'package:flutter/material.dart';
 
 /// Orquestación de **descarga de teselas** (diálogo + [DownloadMapUseCase]).
@@ -16,12 +15,9 @@ class MapTileDownloadFlow {
 
   /// Muestra diálogo (nombre + radio) y ejecuta descarga alrededor de [centerLat]/[centerLon].
   ///
-  /// Retorna `id` del área FMTC creada si OK; `null` si usuario cancela.
-  static Future<String?> showDialogAndDownload({
+  /// Retorna `(nombre, radio)` si OK; `null` si usuario cancela.
+  static Future<(String, double)?> showDownloadDialog({
     required BuildContext context,
-    required MapServices services,
-    required double centerLat,
-    required double centerLon,
     double initialRadiusKm = 5,
   }) async {
     final nameController = TextEditingController(text: 'Zona campo');
@@ -73,14 +69,6 @@ class MapTileDownloadFlow {
       },
     );
 
-    if (picked == null || !context.mounted) return null;
-    final (name, radiusKm) = picked;
-
-    return services.downloadMap.execute(
-      lat: centerLat,
-      lon: centerLon,
-      radius: radiusKm,
-      name: name,
-    );
+    return picked;
   }
 }

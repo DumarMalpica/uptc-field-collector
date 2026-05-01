@@ -1,0 +1,220 @@
+{
+  "form_id": "modulo_vegetacion",
+  "title": "Registro de Vegetación",
+  "fields": [
+    {
+      "field_id": "especie_principal",
+      "label": "Especie (Científica / Principal)",
+      "type": "searchable_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 1,
+      "options": [
+        { "label": "Especie Precargada 1", "value": "sp_1" },
+        { "label": "Especie Precargada 2", "value": "sp_2" },
+        { 
+          "label": "Otra especie / No listada", 
+          "value": "otra",
+          "action": "show_child",
+          "target_fields": ["especie_otra"]
+        }
+      ]
+    },
+    {
+      "field_id": "especie_otra",
+      "label": "Escriba el nombre de la especie principal",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 2
+    },
+    {
+      "field_id": "nombre_comun",
+      "label": "Nombre común (Local)",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 3
+    },
+    {
+      "field_id": "origen_biogeografico",
+      "label": "Origen biogeográfico",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 4,
+      "options": [
+        { "label": "Nativa", "value": "nativa" },
+        { "label": "Introducida", "value": "introducida" },
+        { "label": "Invasora", "value": "invasora" }
+      ]
+    },
+    {
+      "field_id": "tipo_vegetacion",
+      "label": "Tipo de vegetación",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 5,
+      "options": [
+        { "label": "Pratense", "value": "pratense" },
+        { "label": "Arvense", "value": "arvense" },
+        { "label": "Riparia", "value": "riparia" },
+        { "label": "Acuática", "value": "acuatica" },
+        { "label": "Otro", "value": "otro" }
+      ]
+    },
+    {
+      "field_id": "estrato",
+      "label": "Estrato vegetal",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 6,
+      "options": [
+        { 
+          "label": "Arbórea (Árboles)", 
+          "value": "arborea",
+          "action": "show_child",
+          "target_fields": ["medida_altura", "medida_diametro_dap", "medida_copa_ancho", "medida_copa_largo"]
+        },
+        { 
+          "label": "Arbustiva (Arbustos)", 
+          "value": "arbustiva",
+          "action": "show_child",
+          "target_fields": ["medida_altura", "medida_diametro_basal", "medida_copa_ancho", "medida_copa_largo"]
+        },
+        { 
+          "label": "Herbácea (Hierbas/Pastos)", 
+          "value": "herbacea",
+          "action": "show_child",
+          "target_fields": ["cobertura_porcentaje", "cobertura_distribucion"]
+        }
+      ]
+    },
+    {
+      "field_id": "medida_altura",
+      "label": "Altura total (metros)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 7
+    },
+    {
+      "field_id": "medida_diametro_dap",
+      "label": "Diámetro a la Altura del Pecho - DAP (cm)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 8
+    },
+    {
+      "field_id": "medida_diametro_basal",
+      "label": "Diámetro Basal (cm)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 9
+    },
+    {
+      "field_id": "medida_copa_ancho",
+      "label": "Ancho de la copa (metros)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": false,
+      "order": 10
+    },
+    {
+      "field_id": "medida_copa_largo",
+      "label": "Largo de la copa (metros)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": false,
+      "order": 11
+    },
+    {
+      "field_id": "fisionomia",
+      "label": "Fisionomía del paisaje",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 12,
+      "options": [
+        { "label": "Herbazal", "value": "herbazal" },
+        { "label": "Bosque", "value": "bosque" },
+        { "label": "Arbustal", "value": "arbustal" },
+        { "label": "Matorral", "value": "matorral" },
+        { "label": "Otro", "value": "otro" }
+      ]
+    },
+    {
+      "field_id": "cobertura_porcentaje",
+      "label": "Cobertura vegetal (%) - Solo para herbáceas",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 13
+    },
+    {
+      "field_id": "cobertura_distribucion",
+      "label": "Distribución de la cobertura",
+      "type": "single_select",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 14,
+      "options": [
+        { "label": "Homogénea", "value": "homogenea" },
+        { "label": "Heterogénea", "value": "heterogenea" }
+      ]
+    },
+    {
+      "field_id": "estado_fisico",
+      "label": "Estado Físico (Salud, plagas, enfermedades)",
+      "type": "text_long",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 15
+    },
+    {
+      "field_id": "pirogenia",
+      "label": "¿Evidencias de Pirogenia (Incendios)?",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 16,
+      "options": [
+        { 
+          "label": "Sí", 
+          "value": "si",
+          "action": "show_child",
+          "target_fields": ["pirogenia_descripcion"]
+        },
+        { "label": "No", "value": "no" }
+      ]
+    },
+    {
+      "field_id": "pirogenia_descripcion",
+      "label": "Describa la evidencia de pirogenia",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 17
+    },
+    {
+      "field_id": "cobertura_suelo_aparente",
+      "label": "Cobertura de suelo aparente (Sin criterio edafológico)",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 18
+    },
+    {
+      "field_id": "fotografias_vegetacion",
+      "label": "Fotografías (Obligatorio: Panorámica, Detalle Hoja, Detalle Flor/Fruto)",
+      "type": "image_capture",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 19
+    }
+  ]
+}

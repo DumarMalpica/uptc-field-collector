@@ -1,0 +1,234 @@
+{
+  "form_id": "modulo_aves",
+  "title": "Registro de Aves y Hábitat",
+  "fields": [
+    {
+      "field_id": "epoca_ano",
+      "label": "Época del año",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 1,
+      "options": [
+        { "label": "Seca", "value": "seca" },
+        { "label": "Lluviosa", "value": "lluviosa" }
+      ]
+    },
+    {
+      "field_id": "lugar_avistamiento",
+      "label": "Lugar / Zona de muestreo",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 2,
+      "options": [
+        { "label": "Bosque nativo", "value": "bosque_nativo" },
+        { "label": "Humedal / Cuerpo de agua", "value": "humedal" },
+        { "label": "Sabana / Pastizal", "value": "sabana" },
+        { "label": "Zona urbana / Antrópica", "value": "urbana" },
+        { 
+          "label": "Otro (especificar)", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "lugar_otro"
+        }
+      ]
+    },
+    {
+      "field_id": "lugar_otro",
+      "label": "Especifique el lugar",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 3
+    },
+    {
+      "field_id": "especie_ave",
+      "label": "Especie (Catálogo precargado)",
+      "type": "searchable_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 4,
+      "options": [
+        { "label": "Especie Ejemplo 1 (Sustituir por catálogo real)", "value": "especie_1" },
+        { "label": "Especie Ejemplo 2 (Sustituir por catálogo real)", "value": "especie_2" },
+        { 
+          "label": "Especie no listada / No identificada", 
+          "value": "otra_especie",
+          "action": "show_child",
+          "target_field": "especie_otra"
+        }
+      ]
+    },
+    {
+      "field_id": "especie_otra",
+      "label": "Escriba el nombre de la especie o morfofamilia",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 5
+    },
+    {
+      "field_id": "tipo_ave",
+      "label": "Tipo de ave",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 6,
+      "options": [
+        { "label": "Terrestre", "value": "terrestre" },
+        { "label": "Acuática", "value": "acuatica" }
+      ]
+    },
+    {
+      "field_id": "estatus_ave",
+      "label": "Estatus migratorio",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 7,
+      "options": [
+        { "label": "Residente", "value": "residente" },
+        { "label": "Migratoria", "value": "migratoria" }
+      ]
+    },
+    {
+      "field_id": "numero_individuos",
+      "label": "Número de individuos (Cantidad)",
+      "type": "number_integer",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 8
+    },
+    {
+      "field_id": "organizacion_social",
+      "label": "Organización social",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 9,
+      "options": [
+        { "label": "Solitario / Pareja", "value": "solitario" },
+        { "label": "Bandada", "value": "bandada" }
+      ]
+    },
+    {
+      "field_id": "actividad_comportamiento",
+      "label": "Actividad / Comportamiento observado",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 10,
+      "options": [
+        { "label": "Forrajeo (Alimentación)", "value": "forrajeo" },
+        { "label": "Cortejo / Reproducción", "value": "cortejo" },
+        { "label": "Descanso / Percha", "value": "descanso" },
+        { "label": "Vuelo de tránsito", "value": "vuelo" },
+        { 
+          "label": "Otra actividad", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "actividad_otra"
+        }
+      ]
+    },
+    {
+      "field_id": "actividad_otra",
+      "label": "Especifique la actividad",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 11
+    },
+    {
+      "field_id": "habitat_vegetacion",
+      "label": "Hábitat (Vegetación Dominante)",
+      "type": "multi_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 12,
+      "options": [
+        { "label": "Vegetación Nativa", "value": "nativa" },
+        { "label": "Vegetación Exótica / Invasora", "value": "exotica" },
+        { "label": "Pastizal limpio", "value": "pastizal" },
+        { "label": "Rastrojo / Arbustal", "value": "rastrojo" },
+        { 
+          "label": "Otro hábitat", 
+          "value": "otro",
+          "action": "show_child",
+          "target_field": "habitat_otro"
+        }
+      ]
+    },
+    {
+      "field_id": "habitat_otro",
+      "label": "Especifique el hábitat",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 13
+    },
+    {
+      "field_id": "tipo_forrajeo",
+      "label": "Tipo de Forrajeo (Dieta inferida)",
+      "type": "multi_select",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 14,
+      "options": [
+        { "label": "Invertebrados", "value": "invertebrados" },
+        { "label": "Frutas", "value": "frutas" },
+        { "label": "Néctar", "value": "nectar" },
+        { "label": "Semillas", "value": "semillas" },
+        { "label": "Peces / Anfibios", "value": "peces" }
+      ]
+    },
+    {
+      "field_id": "amenazas_observadas",
+      "label": "Amenazas observadas en el entorno",
+      "type": "text_long",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 15
+    },
+    {
+      "field_id": "tipo_registro_foto",
+      "label": "Tipo de registro fotográfico",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 16,
+      "options": [
+        { 
+          "label": "Tomar foto con este celular", 
+          "value": "camara_app",
+          "action": "show_child",
+          "target_field": "fotografia_ave_app"
+        },
+        { 
+          "label": "Foto tomada con Cámara Profesional (Externa)", 
+          "value": "camara_externa",
+          "action": "show_child",
+          "target_field": "id_foto_externa"
+        },
+        { "label": "Sin registro fotográfico", "value": "sin_foto" }
+      ]
+    },
+    {
+      "field_id": "fotografia_ave_app",
+      "label": "Capturar / Adjuntar fotografías (Mínimo 2)",
+      "type": "image_capture",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 17
+    },
+    {
+      "field_id": "id_foto_externa",
+      "label": "ID o Número de la foto en la cámara profesional",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 18
+    }
+  ]
+}

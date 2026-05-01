@@ -1,7 +1,10 @@
 import 'package:field_colector/domain/ports/locator_provider.dart';
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
+import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
 import 'package:field_colector/features/map/screens/map_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla principal: mapa a pantalla completa + panel lateral derecho.
 class DashboardScreen extends StatefulWidget {
@@ -21,6 +24,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   /// `true` mientras el panel está visible o se está cerrando con animación.
   bool _sidebarOpen = false;
 
+  /// Sección activa seleccionada.
+  SidebarSection _activeSection = SidebarSection.home;
+
   @override
   void initState() {
     super.initState();
@@ -28,15 +34,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       vsync: this,
       duration: const Duration(milliseconds: 280),
     );
-    _sidebarSlide = Tween<Offset>(
-      begin: const Offset(1, 0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _sidebarController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _sidebarSlide = Tween<Offset>(begin: const Offset(-1, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _sidebarController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
   }
 
   @override
@@ -64,20 +68,83 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  void _selectSection(SidebarSection section) {
+    if (section == SidebarSection.home) {
+      if (_sidebarOpen) _closeSidebar();
+      setState(() => _activeSection = section);
+      return;
+    }
+    setState(() => _activeSection = section);
+    if (!_sidebarOpen) _openSidebar();
+  }
+
+  Future<void> _onPopInvoked(bool didPop) async {
+    if (didPop) return;
+
+    if (_sidebarOpen) {
+      _closeSidebar();
+      setState(() => _activeSection = SidebarSection.home);
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Salir de la aplicación'),
+        content: const Text('¿Estás seguro que deseas salir?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      SystemNavigator.pop();
+    }
+  }
+
+  Widget _buildSectionContent() {
+    switch (_activeSection) {
+      case SidebarSection.expeditions:
+        return const ExpeditionListScreen();
+      case SidebarSection.home:
+      case SidebarSection.profile:
+      case SidebarSection.settings:
+        return Center(
+          child: Text(
+            _activeSection.label,
+            style: const TextStyle(fontSize: 16, color: Colors.black54),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top + 8;
+    final bottom = MediaQuery.paddingOf(context).bottom + 8;
     final theme = Theme.of(context);
-    final iconSelected = _sidebarOpen || _sidebarController.value > 0.001;
+    final colors = theme.colorScheme;
 
-    return Scaffold(
-      body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _onPopInvoked(didPop);
+        }
+      },
+      child: Scaffold(
+        body: Stack(
         fit: StackFit.expand,
         children: [
-          MapScreen(
-            locator: widget.locator,
-            embedded: true,
-          ),
+          MapScreen(locator: widget.locator, embedded: true),
           ListenableBuilder(
             listenable: _sidebarController,
             builder: (context, _) {
@@ -87,28 +154,76 @@ class _DashboardScreenState extends State<DashboardScreen>
               return MapRightSlidebarLayer(
                 slideAnimation: _sidebarSlide,
                 onBackdropTap: _closeSidebar,
+                child: _buildSectionContent(),
               );
             },
           ),
+
+          // ── Right-edge icon rail (always visible) ──
           Positioned(
             top: top,
+            bottom: bottom,
             right: 8,
-            child: IconButton(
-              style: IconButton.styleFrom(
-                backgroundColor: iconSelected
-                    ? theme.colorScheme.primaryContainer
-                    : theme.colorScheme.surfaceContainerHigh,
-              ),
-              tooltip: 'Menú',
-              onPressed: _toggleSidebar,
-              icon: Icon(
-                Icons.settings,
-                color: theme.colorScheme.onSurface,
-              ),
+            child: Column(
+              children: [
+                // ── Config (top) ──
+                SidebarIcon(
+                  icon: Icons.settings,
+                  isActive: _activeSection == SidebarSection.settings,
+                  onTap: () => _selectSection(SidebarSection.settings),
+                ),
+
+                // ── Active section label (fills middle space) ──
+                Expanded(
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: RotatedBox(
+                        quarterTurns: 1,
+                        child: Text(
+                          _activeSection.label.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 3,
+                            color: Color(0xFF000000),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Bottom icons (home → expeditions → user) ──
+                SidebarIcon(
+                  icon: Icons.home_outlined,
+                  isActive: _activeSection == SidebarSection.home,
+                  onTap: () => _selectSection(SidebarSection.home),
+                ),
+                const SizedBox(height: 12),
+                SidebarIcon(
+                  icon: PhosphorIconsRegular.mountains,
+                  isActive: _activeSection == SidebarSection.expeditions,
+                  onTap: () => _selectSection(SidebarSection.expeditions),
+                ),
+                const SizedBox(height: 12),
+                SidebarIcon(
+                  icon: Icons.person_outline,
+                  isActive: _activeSection == SidebarSection.profile,
+                  onTap: () => _selectSection(SidebarSection.profile),
+                ),
+              ],
             ),
           ),
         ],
       ),
-    );
+    ));
   }
 }

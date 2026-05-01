@@ -1,3 +1,4 @@
+// ignore_for_file: experimental_member_use
 import 'package:isar/isar.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/ports/user_local_port.dart';

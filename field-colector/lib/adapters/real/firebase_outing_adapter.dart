@@ -16,6 +16,9 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       'location': item.location,
       'zone': item.zone,
       'reason': item.reason,
+      'latitude': item.latitude,
+      'longitude': item.longitude,
+      'altitude': item.altitude,
       'startDate': item.startDate.toIso8601String(),
       'endDate': item.endDate.toIso8601String(),
       'createdById': item.createdById,
@@ -92,6 +95,9 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       location: data['location'] ?? '',
       zone: data['zone'] ?? '',
       reason: data['reason'] ?? '',
+      latitude: (data['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
+      altitude: (data['altitude'] as num?)?.toDouble() ?? 0.0,
       startDate: data['startDate'] != null ? DateTime.parse(data['startDate']) : DateTime.now(),
       endDate: data['endDate'] != null ? DateTime.parse(data['endDate']) : DateTime.now(),
       createdById: data['createdById'] ?? '',
@@ -116,7 +122,7 @@ class FirebaseOutingAdapter implements OutingRemotePort {
     final doc = await _firestore.collection(_collection).doc(outingId).get();
     if (!doc.exists) return;
     
-    final data = doc.data() as Map<String, dynamic>?;
+    final data = doc.data();
     if (data == null) return;
     
     final pendingList = List<dynamic>.from(data['pendingUsers'] ?? []);
@@ -132,7 +138,7 @@ class FirebaseOutingAdapter implements OutingRemotePort {
     final doc = await _firestore.collection(_collection).doc(outingId).get();
     if (!doc.exists) return [];
     
-    final data = doc.data() as Map<String, dynamic>?;
+    final data = doc.data();
     if (data == null) return [];
     
     return (data['pendingUsers'] as List<dynamic>?)

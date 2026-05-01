@@ -1,7 +1,6 @@
 import 'package:field_colector/domain/mappers/login_user.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
-import 'package:field_colector/domain/entities/role.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,6 +16,8 @@ class LoginForm extends StatefulWidget {
 class _LoginFormState extends State<LoginForm> {
   late final TextEditingController _userController;
   late final TextEditingController _passwordController;
+
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -62,7 +63,7 @@ class _LoginFormState extends State<LoginForm> {
             controller: _userController,
             decoration: const InputDecoration(
               labelText: 'Usuario',
-              prefixIcon: Icon(Icons.person_outline),
+              suffixIcon: Icon(Icons.person_outline),
             ),
           ),
         ),
@@ -71,10 +72,21 @@ class _LoginFormState extends State<LoginForm> {
           1,
           TextField(
             controller: _passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
               labelText: 'Contraseña',
-              suffixIcon: Icon(Icons.visibility_off_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
             ),
           ),
         ),

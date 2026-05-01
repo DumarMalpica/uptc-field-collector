@@ -1,0 +1,87 @@
+{
+  "form_id": "datos_comunes_ubicacion",
+  "title": "Datos de Ubicación y Parcela",
+  "fields": [
+    {
+      "field_id": "coordenadas_gps",
+      "label": "Ubicación GPS (Latitud, Longitud, Altitud)",
+      "type": "gps_capture", 
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 1
+    },
+    {
+      "field_id": "departamento",
+      "label": "Departamento",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 2
+    },
+    {
+      "field_id": "municipio",
+      "label": "Municipio",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 3
+    },
+    {
+      "field_id": "vereda",
+      "label": "Vereda",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 4
+    },
+    {
+      "field_id": "sector",
+      "label": "Sector / Finca",
+      "type": "text",
+      "is_visible_by_default": true,
+      "is_required": false,
+      "order": 5
+    },
+    {
+      "field_id": "es_parcela",
+      "label": "¿El muestreo es dentro de una parcela delimitada?",
+      "type": "single_select",
+      "is_visible_by_default": true,
+      "is_required": true,
+      "order": 6,
+      "options": [
+        { 
+          "label": "Sí", 
+          "value": "si",
+          "action": "show_child",
+          "target_fields": ["parcela_numero", "parcela_ancho", "parcela_largo"]
+        },
+        { "label": "No", "value": "no" }
+      ]
+    },
+    {
+      "field_id": "parcela_numero",
+      "label": "Número o ID de la Parcela (Ej: P-01)",
+      "type": "text",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 7
+    },
+    {
+      "field_id": "parcela_ancho",
+      "label": "Ancho de la parcela (metros)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 8
+    },
+    {
+      "field_id": "parcela_largo",
+      "label": "Largo de la parcela (metros)",
+      "type": "number_decimal",
+      "is_visible_by_default": false,
+      "is_required": true,
+      "order": 9
+    }
+  ]
+}

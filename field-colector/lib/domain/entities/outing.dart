@@ -33,6 +33,9 @@ class Outing {
   final String location;
   final String zone;
   final String reason;
+  final double latitude;
+  final double longitude;
+  final double altitude;
   final DateTime startDate;
   final DateTime endDate;
   final String createdById;
@@ -48,6 +51,9 @@ class Outing {
     required this.location,
     required this.zone,
     required this.reason,
+    required this.latitude,
+    required this.longitude,
+    required this.altitude,
     required this.startDate,
     required this.endDate,
     required this.createdById,

@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:field_colector/domain/ports/bird_record_remote_port.dart';
 import 'package:field_colector/domain/ports/outing_remote_port.dart';
@@ -36,6 +38,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FMTCObjectBoxBackend().initialise();
+  await initializeDateFormatting('es');
 
   final mapServices = MapServices.create();
 
@@ -69,6 +72,15 @@ class MyApp extends StatelessWidget {
         title: 'Citesa Field Colector',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('es'),
+          Locale('en'),
+        ],
         home: const HomeScreen(),
       ),
     );
