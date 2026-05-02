@@ -82,6 +82,20 @@ class FirebaseRockRecordAdapter implements RockRecordRemotePort {
     );
   }
 
+  @override
+  Future<List<RockRecord>> getRockRecordsForExport({String? outingId, String? userId}) async {
+    Query query = _firestore.collection(_collection);
+
+    if (outingId != null) {
+      query = query.where('outingId', isEqualTo: outingId);
+    } else if (userId != null) {
+      query = query.where('userId', isEqualTo: userId);
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs.map((doc) => _mapSnapshotToRockRecord(doc)).toList();
+  }
+
   RockRecord _mapSnapshotToRockRecord(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final coord = data['coordinates'] as Map<String, dynamic>? ?? {};
