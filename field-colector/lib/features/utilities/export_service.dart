@@ -178,11 +178,11 @@ class ExportService {
         ..createSync(recursive: true)
         ..writeAsBytesSync(fileBytes);
 
-      print('✅ Archivo Excel generado con éxito: $filePath');
+      print('Archivo Excel generado con éxito: $filePath');
       return filePath;
 
     } catch (e) {
-      print('❌ Error generando el archivo Excel: $e');
+      print('Error generando el archivo Excel: $e');
       return null;
     }
   }
