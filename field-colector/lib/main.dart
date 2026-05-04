@@ -31,6 +31,8 @@ import 'package:field_colector/adapters/real/firebase_user_adapter.dart';
 import 'package:field_colector/adapters/real/firebase_vegetation_record_adapter.dart';
 import 'package:field_colector/adapters/real/firebase_water_record_adapter.dart';
 
+import 'package:field_colector/features/utilities/export_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
@@ -67,6 +69,15 @@ class MyApp extends StatelessWidget {
         Provider<UserRemotePort>(create: (_) => FirebaseUserAdapter(FirebaseFirestore.instance)),
         Provider<VegetationRecordRemotePort>(create: (_) => FirebaseVegetationRecordAdapter(FirebaseFirestore.instance)),
         Provider<WaterRecordRemotePort>(create: (_) => FirebaseWaterRecordAdapter(FirebaseFirestore.instance)),
+        Provider<ExportService>(
+          create: (context) => ExportService(
+            birdPort: context.read<BirdRecordRemotePort>(),
+            rockPort: context.read<RockRecordRemotePort>(),
+            soilPort: context.read<SoilRecordRemotePort>(),
+            vegetationPort: context.read<VegetationRecordRemotePort>(),
+            waterPort: context.read<WaterRecordRemotePort>(),
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'Citesa Field Colector',

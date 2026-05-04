@@ -7,6 +7,7 @@ abstract class RockRecordRemotePort {
   Future<void> deleteRockRecord(String id);
   Future<RockRecord?> getRockRecordById(String id);
   Future<RockRecordSearchResult> getRockRecords({int limit = 20, DocumentSnapshot? lastDocument});
+  Future<List<RockRecord>> getRockRecordsForExport({String? outingId, String? userId});
 }
 
 class RockRecordSearchResult {
