@@ -7,6 +7,7 @@ abstract class BirdRecordRemotePort {
   Future<void> deleteBirdRecord(String id);
   Future<BirdRecord?> getBirdRecordById(String id);
   Future<BirdRecordSearchResult> getBirdRecords({int limit = 20, DocumentSnapshot? lastDocument});
+  Future<List<BirdRecord>> getBirdRecordsForExport({String? outingId, String? userId});
 }
 
 class BirdRecordSearchResult {
