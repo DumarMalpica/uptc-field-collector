@@ -29,13 +29,13 @@ class ExportService {
     required this.waterPort,
   });
 
-  Future<String?> generateExcel({String? outingId, String? userId, required String fileNamePrefix}) async {
+  Future<String?> generateExcel({String? outingId, String? userId, DateTime? startDate, DateTime? endDate, required String fileNamePrefix}) async {
     try {
       var excel = Excel.createExcel();
 
       String defaultSheet = excel.getDefaultSheet() ?? 'Sheet1';
 
-      final birds = await birdPort.getBirdRecordsForExport(outingId: outingId, userId: userId);
+      final birds = await birdPort.getBirdRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
       if (birds.isNotEmpty) {
         Sheet sheet = excel['Aves'];
         sheet.appendRow([
@@ -61,7 +61,7 @@ class ExportService {
         }
       }
 
-      final rocks = await rockPort.getRockRecordsForExport(outingId: outingId, userId: userId);
+      final rocks = await rockPort.getRockRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
       if (rocks.isNotEmpty) {
         Sheet sheet = excel['Rocas'];
         sheet.appendRow([
@@ -85,7 +85,7 @@ class ExportService {
         }
       }
 
-      final soils = await soilPort.getSoilRecordsForExport(outingId: outingId, userId: userId);
+      final soils = await soilPort.getSoilRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
       if (soils.isNotEmpty) {
         Sheet sheet = excel['Suelos'];
         sheet.appendRow([
@@ -109,7 +109,7 @@ class ExportService {
         }
       }
 
-      final veg = await vegetationPort.getVegetationRecordsForExport(outingId: outingId, userId: userId);
+      final veg = await vegetationPort.getVegetationRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
       if (veg.isNotEmpty) {
         Sheet sheet = excel['Vegetación'];
         sheet.appendRow([
@@ -133,7 +133,7 @@ class ExportService {
         }
       }
 
-      final water = await waterPort.getWaterRecordsForExport(outingId: outingId, userId: userId);
+      final water = await waterPort.getWaterRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
       if (water.isNotEmpty) {
         Sheet sheet = excel['Agua'];
         sheet.appendRow([
