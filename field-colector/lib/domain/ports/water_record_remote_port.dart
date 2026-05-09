@@ -7,7 +7,7 @@ abstract class WaterRecordRemotePort {
   Future<void> deleteWaterRecord(String id);
   Future<WaterRecord?> getWaterRecordById(String id);
   Future<WaterRecordSearchResult> getWaterRecords({int limit = 20, DocumentSnapshot? lastDocument});
-  Future<List<WaterRecord>> getWaterRecordsForExport({String? outingId, String? userId});
+  Future<List<WaterRecord>> getWaterRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
 }
 
 class WaterRecordSearchResult {

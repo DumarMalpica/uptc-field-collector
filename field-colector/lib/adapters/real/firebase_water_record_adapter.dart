@@ -91,13 +91,20 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
   }
 
   @override
-  Future<List<WaterRecord>> getWaterRecordsForExport({String? outingId, String? userId}) async {
+  Future<List<WaterRecord>> getWaterRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate}) async {
     Query query = _firestore.collection(_collection);
 
     if (outingId != null) {
       query = query.where('outingId', isEqualTo: outingId);
     } else if (userId != null) {
       query = query.where('userId', isEqualTo: userId);
+    }
+
+    if (startDate != null) {
+      query = query.where('recordedAt', isGreaterThanOrEqualTo: startDate.toIso8601String());
+    }
+    if (endDate != null) {
+      query = query.where('recordedAt', isLessThanOrEqualTo: endDate.toIso8601String());
     }
 
     final snapshot = await query.get();

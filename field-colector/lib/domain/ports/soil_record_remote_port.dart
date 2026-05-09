@@ -7,7 +7,7 @@ abstract class SoilRecordRemotePort {
   Future<void> deleteSoilRecord(String id);
   Future<SoilRecord?> getSoilRecordById(String id);
   Future<SoilRecordSearchResult> getSoilRecords({int limit = 20, DocumentSnapshot? lastDocument});
-  Future<List<SoilRecord>> getSoilRecordsForExport({String? outingId, String? userId});
+  Future<List<SoilRecord>> getSoilRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
 }
 
 class SoilRecordSearchResult {

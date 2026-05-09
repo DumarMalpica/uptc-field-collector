@@ -7,7 +7,7 @@ abstract class VegetationRecordRemotePort {
   Future<void> deleteVegetationRecord(String id);
   Future<VegetationRecord?> getVegetationRecordById(String id);
   Future<VegetationRecordSearchResult> getVegetationRecords({int limit = 20, DocumentSnapshot? lastDocument});
-  Future<List<VegetationRecord>> getVegetationRecordsForExport({String? outingId, String? userId});
+  Future<List<VegetationRecord>> getVegetationRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
 }
 
 class VegetationRecordSearchResult {
