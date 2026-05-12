@@ -1,6 +1,8 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../adapters/real/user_model.dart';
+import '../../adapters/real/outing_model.dart';
+import '../../adapters/real/photo_model.dart';
 
 /// Servicio singleton que gestiona la instancia de Isar.
 ///
@@ -17,7 +19,7 @@ class IsarService {
     final dir = await getApplicationDocumentsDirectory();
 
     _instance = await Isar.open(
-      [UserModelSchema],
+      [UserModelSchema, OutingModelSchema, PhotoModelSchema],
       directory: dir.path,
       name: 'citesa_field_collector',
     );
