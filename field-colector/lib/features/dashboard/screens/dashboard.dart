@@ -1,4 +1,5 @@
 import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/features/dashboard/widgets/field_registration_panel.dart';
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
@@ -144,12 +145,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       case SidebarSection.expeditions:
         return const ExpeditionListScreen();
       case SidebarSection.fieldRegistration:
-        return const Center(
-          child: Text(
-            'Formulario de registro (próximamente)',
-            style: TextStyle(fontSize: 16, color: Colors.black54),
-          ),
-        );
+        return const FieldRegistrationPanel();
       case SidebarSection.home:
       case SidebarSection.profile:
       case SidebarSection.settings:
