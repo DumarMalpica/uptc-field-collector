@@ -294,14 +294,19 @@ class _LoginScreenState extends State<LoginScreen>
       );
     }
 
+    // Pequeño control arriba-izq. El rect 25% opaco robaba taps a campos (p. ej. con teclado).
     return Positioned(
       top: 0,
       left: 0,
-      right: 0,
-      height: MediaQuery.of(context).size.height * 0.25,
-      child: GestureDetector(
-        onTap: () => _switchTo(_LoginZone.welcome),
-        behavior: HitTestBehavior.opaque,
+      child: SafeArea(
+        child: IconButton(
+          tooltip: 'Inicio',
+          style: IconButton.styleFrom(
+            foregroundColor: AppColors.accent.withValues(alpha: 0.95),
+          ),
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => _switchTo(_LoginZone.welcome),
+        ),
       ),
     );
   }

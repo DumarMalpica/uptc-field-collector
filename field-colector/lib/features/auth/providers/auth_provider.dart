@@ -42,6 +42,13 @@ class Authprovider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Limpia [errorMessage] tras edición en formularios (evita mensaje obsoleto).
+  void clearAuthFormError() {
+    if (_errorMessage == null) return;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   /// Aplica usuario restaurado desde el puerto (token válido) o limpia sesión.
   void _applySessionUser(User? restored) {
     if (restored != null && restored.hasValidToken) {

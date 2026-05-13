@@ -13,6 +13,9 @@ class RegisterForm extends StatefulWidget {
   State<RegisterForm> createState() => _RegisterFormState();
 }
 
+bool _registerEmailOk(String email) =>
+    RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email);
+
 class _RegisterFormState extends State<RegisterForm> {
   int? _userType;
   String? _studyArea;
@@ -30,7 +33,10 @@ class _RegisterFormState extends State<RegisterForm> {
   bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
 
-  void _onFormEdited() => setState(() {});
+  void _onFormEdited() {
+    context.read<Authprovider>().clearAuthFormError();
+    setState(() {});
+  }
 
   @override
   void initState() {
@@ -68,8 +74,7 @@ class _RegisterFormState extends State<RegisterForm> {
 
   bool _confirmPasswordMismatch() {
     final confirm = _confirmPasswordController.text;
-    return confirm.isNotEmpty &&
-        _passwordController.text != confirm;
+    return confirm.isNotEmpty && _passwordController.text != confirm;
   }
 
   bool _canSubmit() {
@@ -79,6 +84,7 @@ class _RegisterFormState extends State<RegisterForm> {
     final pwd = _passwordController.text;
     final confirm = _confirmPasswordController.text;
     if (first.isEmpty || last.isEmpty || mail.isEmpty) return false;
+    if (!_registerEmailOk(mail)) return false;
     if (pwd.isEmpty || confirm.isEmpty || pwd != confirm) return false;
     if (_userType == null) return false;
     final area = _studyArea?.trim();
@@ -112,10 +118,19 @@ class _RegisterFormState extends State<RegisterForm> {
       if (!mounted) return;
       final err = auth.errorMessage;
       if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(err)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(err)));
       }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            auth.errorMessage ?? 'No se pudo registrar. Intenta de nuevo.',
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -123,6 +138,7 @@ class _RegisterFormState extends State<RegisterForm> {
 
   @override
   Widget build(BuildContext context) {
+    final mailTrim = _emailController.text.trim();
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -147,13 +163,21 @@ class _RegisterFormState extends State<RegisterForm> {
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Correo'),
+          decoration: InputDecoration(
+            labelText: 'Correo',
+            errorText: mailTrim.isNotEmpty && !_registerEmailOk(mailTrim)
+                ? 'Correo no válido'
+                : null,
+          ),
         ),
         AppStyles.gapSm,
 
         RadioGroup<int>(
           groupValue: _userType,
-          onChanged: (v) => setState(() => _userType = v),
+          onChanged: (v) {
+            context.read<Authprovider>().clearAuthFormError();
+            setState(() => _userType = v);
+          },
           child: Row(
             children: const [
               Expanded(
@@ -166,7 +190,7 @@ class _RegisterFormState extends State<RegisterForm> {
               ),
               Expanded(
                 child: RadioListTile<int>(
-                  title: Text('Graduado'),
+                  title: Text('Profesional'),
                   value: 1,
                   contentPadding: EdgeInsets.zero,
                   dense: true,
@@ -206,7 +230,10 @@ class _RegisterFormState extends State<RegisterForm> {
                   dropdownMenuEntries: careers.map((c) {
                     return DropdownMenuEntry(value: c, label: c);
                   }).toList(),
-                  onSelected: (v) => setState(() => _studyArea = v),
+                  onSelected: (v) {
+                    context.read<Authprovider>().clearAuthFormError();
+                    setState(() => _studyArea = v);
+                  },
                   width: double.infinity,
                 ),
                 if (_studyArea == 'Otra')
@@ -217,7 +244,10 @@ class _RegisterFormState extends State<RegisterForm> {
                         labelText: 'Especifica tu carrera',
                         hintText: 'Ingresa tu carrera',
                       ),
-                      onChanged: (v) => setState(() => _otherCareer = v),
+                      onChanged: (v) {
+                        context.read<Authprovider>().clearAuthFormError();
+                        setState(() => _otherCareer = v);
+                      },
                     ),
                   ),
               ],
