@@ -1,5 +1,6 @@
 import 'package:field_colector/adapters/fake/fake_auth_adapter.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/home/screens/home.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_theme.dart';
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => Authprovider(authPort: FakeAuthAdapter()),
         ),
+        ChangeNotifierProvider(create: (_) => FieldSessionProvider()),
         Provider<MapServices>.value(value: mapServices),
 
         Provider<BirdRecordRemotePort>(create: (_) => FirebaseBirdRecordAdapter(FirebaseFirestore.instance)),

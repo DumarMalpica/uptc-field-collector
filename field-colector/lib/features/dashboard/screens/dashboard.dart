@@ -1,10 +1,12 @@
 import 'package:field_colector/domain/ports/locator_provider.dart';
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
+import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
 import 'package:field_colector/features/map/screens/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
 
 /// Pantalla principal: mapa a pantalla completa + panel lateral derecho.
 class DashboardScreen extends StatefulWidget {
@@ -27,6 +29,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   /// Sección activa seleccionada.
   SidebarSection _activeSection = SidebarSection.home;
 
+  FieldSessionProvider? _fieldSessionListened;
+
   @override
   void initState() {
     super.initState();
@@ -44,7 +48,32 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final field = context.read<FieldSessionProvider>();
+    if (!identical(_fieldSessionListened, field)) {
+      _fieldSessionListened?.removeListener(_onFieldSessionChanged);
+      _fieldSessionListened = field;
+      _fieldSessionListened!.addListener(_onFieldSessionChanged);
+    }
+  }
+
+  void _onFieldSessionChanged() {
+    final field = _fieldSessionListened!;
+    final goHome = field.takePendingDashboardHome();
+    setState(() {
+      if (goHome) {
+        _activeSection = SidebarSection.home;
+      }
+    });
+    if (goHome && _sidebarOpen) {
+      _closeSidebar();
+    }
+  }
+
+  @override
   void dispose() {
+    _fieldSessionListened?.removeListener(_onFieldSessionChanged);
     _sidebarController.dispose();
     super.dispose();
   }
@@ -114,6 +143,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     switch (_activeSection) {
       case SidebarSection.expeditions:
         return const ExpeditionListScreen();
+      case SidebarSection.fieldRegistration:
+        return const Center(
+          child: Text(
+            'Formulario de registro (próximamente)',
+            style: TextStyle(fontSize: 16, color: Colors.black54),
+          ),
+        );
       case SidebarSection.home:
       case SidebarSection.profile:
       case SidebarSection.settings:
@@ -132,6 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final bottom = MediaQuery.paddingOf(context).bottom + 8;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final fieldMode = context.watch<FieldSessionProvider>().fieldModeActive;
 
     return PopScope(
       canPop: false,
@@ -145,6 +182,19 @@ class _DashboardScreenState extends State<DashboardScreen>
         fit: StackFit.expand,
         children: [
           MapScreen(locator: widget.locator, embedded: true),
+
+          if (fieldMode)
+            Positioned(
+              left: 12,
+              bottom: bottom,
+              child: FilledButton.tonalIcon(
+                onPressed: () =>
+                    _selectSection(SidebarSection.fieldRegistration),
+                icon: const Icon(Icons.edit_note, size: 20),
+                label: const Text('Registro'),
+              ),
+            ),
+
           ListenableBuilder(
             listenable: _sidebarController,
             builder: (context, _) {
@@ -213,6 +263,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                   isActive: _activeSection == SidebarSection.expeditions,
                   onTap: () => _selectSection(SidebarSection.expeditions),
                 ),
+                if (fieldMode) ...[
+                  const SizedBox(height: 12),
+                  SidebarIcon(
+                    icon: PhosphorIconsRegular.tree,
+                    isActive:
+                        _activeSection == SidebarSection.fieldRegistration,
+                    onTap: () =>
+                        _selectSection(SidebarSection.fieldRegistration),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 SidebarIcon(
                   icon: Icons.person_outline,

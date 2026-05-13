@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 enum SidebarSection {
   home('Inicio'),
   expeditions('Expediciones'),
+  fieldRegistration('Registro'),
   profile('Perfil'),
   settings('Configuración');
 
