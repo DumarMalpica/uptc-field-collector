@@ -1,10 +1,18 @@
+/// Panel lateral del mapa: catálogo de formularios por categoría y apertura del dinámico.
+///
+/// Flujo: chips de [FieldFormCategory] → lista de [FieldFormDefinition] desde
+/// [kFieldFormCatalog]. Al elegir un ítem se monta [ChangeNotifierProvider] de
+/// [FormProvider] (clave por `assetPath`) y [DynamicFormScreen], que carga
+/// `common_data.json` más el JSON del módulo en el proveedor.
 import 'package:field_colector/features/dashboard/data/field_form_catalog.dart';
+import 'package:field_colector/features/forms/providers/form_provider.dart';
+import 'package:field_colector/features/forms/screens/dynamic_form_screen.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
 
-/// Panel lateral: elige categoría y luego un formulario de registro en campo.
 class FieldRegistrationPanel extends StatefulWidget {
   const FieldRegistrationPanel({super.key});
 
@@ -37,9 +45,18 @@ class _FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
   @override
   Widget build(BuildContext context) {
     if (_selectedForm != null) {
-      return _FormDetailPlaceholder(
-        form: _selectedForm!,
-        onBack: () => setState(() => _selectedForm = null),
+      final form = _selectedForm!;
+      return ChangeNotifierProvider(
+        key: ValueKey(form.assetPath),
+        create: (_) {
+          final p = FormProvider();
+          p.loadForm(form.assetPath);
+          return p;
+        },
+        child: DynamicFormScreen(
+          catalogEntry: form,
+          onBack: () => setState(() => _selectedForm = null),
+        ),
       );
     }
 
@@ -192,65 +209,3 @@ class _EmptyCategoryMessage extends StatelessWidget {
   }
 }
 
-class _FormDetailPlaceholder extends StatelessWidget {
-  const _FormDetailPlaceholder({
-    required this.form,
-    required this.onBack,
-  });
-
-  final FieldFormDefinition form;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 4, 8, 8),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back),
-                color: AppColors.textPrimary,
-              ),
-              Expanded(
-                child: Text(
-                  form.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    PhosphorIconsRegular.clipboardText,
-                    size: 48,
-                    color: AppColors.textSecondary.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Variables y captura de datos: próximamente.',
-                    textAlign: TextAlign.center,
-                    style: AppStyles.body,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
