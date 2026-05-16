@@ -16,7 +16,7 @@ class User {
   /// JWT retornado por Firebase Auth. Guardado en Isar para validación offline.
   final String? token;
 
-  /// Expiración del token. Permite saber si la sesión offline sigue vigente.
+  /// Fin de ventana de sesión offline (app); JWT de Firebase sigue siendo corto.
   final DateTime? tokenExpiry;
 
   final bool isActive;

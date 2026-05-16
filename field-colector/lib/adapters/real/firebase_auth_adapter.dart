@@ -4,6 +4,9 @@ import '../../domain/entities/role.dart';
 import '../../domain/ports/auth_port.dart';
 import '../../domain/ports/user_local_port.dart';
 
+/// Ventana de sesión offline persistida (no cambia TTL del JWT de Firebase).
+const Duration _persistedSessionValidity = Duration(days: 30);
+
 class FirebaseAuthAdapter implements AuthPort {
   final fb.FirebaseAuth _firebaseAuth;
   final UserLocalPort _userLocalPort;
@@ -34,7 +37,7 @@ class FirebaseAuthAdapter implements AuthPort {
         fullName: fbUser.displayName ?? 'Investigador',
         role: Role.user,
         token: tokenResult.token,
-        tokenExpiry: tokenResult.expirationTime,
+        tokenExpiry: DateTime.now().add(_persistedSessionValidity),
         createdAt: fbUser.metadata.creationTime,
       );
 
@@ -76,7 +79,7 @@ class FirebaseAuthAdapter implements AuthPort {
         fieldStudy: fieldStudy,
         role: Role.user,
         token: tokenResult.token,
-        tokenExpiry: tokenResult.expirationTime,
+        tokenExpiry: DateTime.now().add(_persistedSessionValidity),
         createdAt: fbUser.metadata.creationTime ?? DateTime.now(),
       );
 
@@ -111,7 +114,7 @@ class FirebaseAuthAdapter implements AuthPort {
         fullName: fbUser.displayName ?? 'Investigador',
         role: Role.user,
         token: tokenResult.token,
-        tokenExpiry: tokenResult.expirationTime,
+        tokenExpiry: DateTime.now().add(_persistedSessionValidity),
         createdAt: fbUser.metadata.creationTime,
       );
       await _userLocalPort.saveUser(user);
