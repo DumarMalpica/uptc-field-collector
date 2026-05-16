@@ -1,9 +1,11 @@
 /// Panel lateral del mapa: catálogo de formularios por categoría y apertura del dinámico.
 ///
 /// Flujo: chips de [FieldFormCategory] → lista de [FieldFormDefinition] desde
-/// [kFieldFormCatalog]. Al elegir un ítem se monta [ChangeNotifierProvider] de
-/// [FormProvider] (clave por `assetPath`) y [DynamicFormScreen], que carga
-/// `common_data.json` más el JSON del módulo en el proveedor.
+/// [kFieldFormCatalog]. Al elegir un ítem se crea [FormProvider] en estado y
+/// [DynamicFormScreen], con borradores vía [FormDraftService].
+import 'dart:async';
+
+import 'package:field_colector/core/database/form_draft_service.dart';
 import 'package:field_colector/features/dashboard/data/field_form_catalog.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
 import 'package:field_colector/features/forms/screens/dynamic_form_screen.dart';
@@ -17,12 +19,13 @@ class FieldRegistrationPanel extends StatefulWidget {
   const FieldRegistrationPanel({super.key});
 
   @override
-  State<FieldRegistrationPanel> createState() => _FieldRegistrationPanelState();
+  FieldRegistrationPanelState createState() => FieldRegistrationPanelState();
 }
 
-class _FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
+class FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
   FieldFormCategory _category = FieldFormCategory.geological;
   FieldFormDefinition? _selectedForm;
+  FormProvider? _formProvider;
 
   static final List<FieldFormCategory> _categoryOrder = [
     FieldFormCategory.geological,
@@ -31,6 +34,54 @@ class _FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
     FieldFormCategory.social,
     FieldFormCategory.other,
   ];
+
+  bool get isFormOpen => _selectedForm != null;
+
+  Future<void> flushOpenFormDraft() async {
+    await _formProvider?.saveDraftNow();
+  }
+
+  Future<void> discardOpenFormDraft() async {
+    final path = _selectedForm?.assetPath;
+    _formProvider?.markSkipPersistOnDispose();
+    _disposeFormProvider();
+    if (path != null && mounted) {
+      await context.read<FormDraftService>().clearDraft(path);
+    }
+    if (mounted) {
+      setState(() => _selectedForm = null);
+    }
+  }
+
+  Future<void> closeFormToCatalog() async {
+    await flushOpenFormDraft();
+    _disposeFormProvider();
+    if (mounted) {
+      setState(() => _selectedForm = null);
+    }
+  }
+
+  void _disposeFormProvider() {
+    _formProvider?.dispose();
+    _formProvider = null;
+  }
+
+  void _openForm(FieldFormDefinition f) {
+    final draftSvc = context.read<FormDraftService>();
+    _disposeFormProvider();
+    final p = FormProvider(draftService: draftSvc);
+    setState(() {
+      _selectedForm = f;
+      _formProvider = p;
+    });
+    unawaited(p.loadForm(f.assetPath));
+  }
+
+  @override
+  void dispose() {
+    _disposeFormProvider();
+    super.dispose();
+  }
 
   IconData _categoryIcon(FieldFormCategory c) {
     return switch (c) {
@@ -44,21 +95,20 @@ class _FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedForm != null) {
-      final form = _selectedForm!;
-      return ChangeNotifierProvider(
-        key: ValueKey(form.assetPath),
-        create: (_) {
-          final p = FormProvider();
-          p.loadForm(form.assetPath);
-          return p;
-        },
+    if (_selectedForm != null && _formProvider != null) {
+      return ChangeNotifierProvider<FormProvider>.value(
+        value: _formProvider!,
         child: DynamicFormScreen(
-          catalogEntry: form,
-          onBack: () => setState(() => _selectedForm = null),
+          catalogEntry: _selectedForm!,
+          onBack: () {
+            unawaited(closeFormToCatalog());
+          },
         ),
       );
     }
+
+    final draftSvc = context.watch<FormDraftService>();
+    final draftPaths = draftSvc.modulePathsWithDrafts;
 
     final items = formsInCategory(_category).toList();
 
@@ -121,11 +171,12 @@ class _FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, i) {
                     final f = items[i];
+                    final hasDraft = draftPaths.contains(f.assetPath);
                     return Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () => setState(() => _selectedForm = f),
+                        onTap: () => _openForm(f),
                         child: Ink(
                           decoration: AppStyles.card,
                           child: Padding(
@@ -135,10 +186,28 @@ class _FieldRegistrationPanelState extends State<FieldRegistrationPanel> {
                             ),
                             child: Row(
                               children: [
-                                Icon(
-                                  PhosphorIconsRegular.fileText,
-                                  color: AppColors.primary,
-                                  size: 28,
+                                Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Icon(
+                                      PhosphorIconsRegular.fileText,
+                                      color: AppColors.primary,
+                                      size: 28,
+                                    ),
+                                    if (hasDraft)
+                                      Positioned(
+                                        right: -2,
+                                        top: -2,
+                                        child: Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.accent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
@@ -208,4 +277,3 @@ class _EmptyCategoryMessage extends StatelessWidget {
     );
   }
 }
-
