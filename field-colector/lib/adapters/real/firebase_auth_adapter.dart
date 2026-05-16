@@ -64,21 +64,31 @@ class FirebaseAuthAdapter implements AuthPort {
         password: password,
       );
 
-      await credential.user?.updateDisplayName(fullName);
+      final fbUser = credential.user!;
+      await fbUser.updateDisplayName(fullName);
+
+      final tokenResult = await fbUser.getIdTokenResult();
 
       final user = User(
-        id: credential.user!.uid,
+        id: fbUser.uid,
         email: email,
         fullName: fullName,
         fieldStudy: fieldStudy,
         role: Role.user,
-        createdAt: DateTime.now(),
+        token: tokenResult.token,
+        tokenExpiry: tokenResult.expirationTime,
+        createdAt: fbUser.metadata.creationTime ?? DateTime.now(),
       );
 
       await _userLocalPort.saveUser(user);
       return user;
     } on fb.FirebaseAuthException catch (e) {
       throw _handleFirebaseError(e);
+    } catch (e) {
+      throw AuthException(
+        message: 'Error inesperado: $e',
+        type: AuthErrorType.unknown,
+      );
     }
   }
 
@@ -93,12 +103,22 @@ class FirebaseAuthAdapter implements AuthPort {
     final fbUser = _firebaseAuth.currentUser;
     if (fbUser == null) return null;
 
-    return User(
-      id: fbUser.uid,
-      email: fbUser.email ?? '',
-      fullName: fbUser.displayName ?? '',
-      role: Role.user,
-    );
+    try {
+      final tokenResult = await fbUser.getIdTokenResult();
+      final user = User(
+        id: fbUser.uid,
+        email: fbUser.email ?? '',
+        fullName: fbUser.displayName ?? 'Investigador',
+        role: Role.user,
+        token: tokenResult.token,
+        tokenExpiry: tokenResult.expirationTime,
+        createdAt: fbUser.metadata.creationTime,
+      );
+      await _userLocalPort.saveUser(user);
+      return user;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

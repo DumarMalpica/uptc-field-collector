@@ -50,6 +50,22 @@ void main() {
       expect(result, isNull);
     });
 
+    test('getRawLocalUser retorna usuario aunque el token esté expirado', () async {
+      final userExpirado = _userConTokenExpirado();
+      when(() => mockPort.getRawLocalUser()).thenAnswer((_) async => userExpirado);
+
+      final result = await mockPort.getRawLocalUser();
+
+      expect(result, isNotNull);
+      expect(result!.hasValidToken, isFalse);
+    });
+
+    test('getRawLocalUser retorna null si no hay usuario', () async {
+      when(() => mockPort.getRawLocalUser()).thenAnswer((_) async => null);
+
+      expect(await mockPort.getRawLocalUser(), isNull);
+    });
+
     test('clearLocalUser limpia el usuario al hacer logout', () async {
       when(() => mockPort.clearLocalUser()).thenAnswer((_) async {});
 
