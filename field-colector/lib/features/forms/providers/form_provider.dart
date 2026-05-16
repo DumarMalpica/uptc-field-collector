@@ -6,8 +6,11 @@
 /// - Cachear el esquema fusionado en memoria por ruta del módulo (reapertura rápida).
 /// - Mantener valores por `field_id` y recalcular visibilidad cuando las
 ///   selecciones activan `show_child` en [FieldOption].
-///
-/// No persiste envíos; solo estado de sesión de pantalla.
+/// - Persistir borrador vía [FormDraftService] (debounce) hasta envío exitoso
+///   a backend; entonces [clearPersistedDraft].
+import 'dart:async';
+
+import 'package:field_colector/core/database/form_draft_service.dart';
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -15,18 +18,27 @@ import 'package:flutter/services.dart';
 /// [ChangeNotifier] que expone carga, error, campos visibles y valores actuales.
 class FormProvider extends ChangeNotifier {
   static const String kCommonAssetPath = 'assets/data/common_data.json';
+  static const Duration _saveDebounce = Duration(milliseconds: 300);
 
-  FormProvider();
+  FormProvider({required FormDraftService draftService})
+      : _draftService = draftService;
+
+  final FormDraftService _draftService;
 
   bool _loading = false;
   String? _error;
 
   String _moduleTitle = '';
   String _moduleFormId = '';
+  String? _moduleAssetPath;
   List<FormFieldDef> _fields = const [];
 
   final Map<String, dynamic> _values = {};
   final Set<String> _visibleFieldIds = {};
+
+  bool _dirty = false;
+  bool _skipPersistOnDispose = false;
+  Timer? _saveTimer;
 
   static final Map<String, _CachedMerged> _cache = {};
 
@@ -34,19 +46,47 @@ class FormProvider extends ChangeNotifier {
   String? get errorMessage => _error;
   String get moduleTitle => _moduleTitle;
   String get moduleFormId => _moduleFormId;
+  String? get moduleAssetPath => _moduleAssetPath;
   List<FormFieldDef> get fields => List.unmodifiable(_fields);
   Map<String, dynamic> get values => Map.unmodifiable(_values);
+  bool get isDirty => _dirty;
 
   bool isFieldVisible(String fieldId) => _visibleFieldIds.contains(fieldId);
 
   dynamic valueFor(String fieldId) => _values[fieldId];
 
+  /// No persiste al salir ni en debounce (p. ej. borrador descartado por el usuario).
+  void markSkipPersistOnDispose() {
+    _skipPersistOnDispose = true;
+  }
+
+  /// Tras guardar en Firestore u otro backend: borra borrador local.
+  Future<void> clearPersistedDraft() async {
+    final path = _moduleAssetPath;
+    if (path == null) return;
+    await _draftService.clearDraft(path);
+    _dirty = false;
+  }
+
+  /// Fuerza escritura inmediata del borrador (p. ej. antes de cambiar de sección).
+  Future<void> saveDraftNow() async {
+    _saveTimer?.cancel();
+    _saveTimer = null;
+    final path = _moduleAssetPath;
+    if (path == null) return;
+    await _draftService.saveDraft(path, Map<String, dynamic>.from(_values));
+    _dirty = false;
+  }
+
   /// Loads common + module; uses in-memory cache keyed by [moduleAssetPath].
   Future<void> loadForm(String moduleAssetPath) async {
+    _moduleAssetPath = moduleAssetPath;
+    _dirty = false;
     final cached = _cache[moduleAssetPath];
     if (cached != null) {
       _error = null;
       _applyMerged(cached);
+      await _restoreDraftIfAny(moduleAssetPath);
       _recomputeVisibility();
       notifyListeners();
       return;
@@ -77,6 +117,7 @@ class FormProvider extends ChangeNotifier {
       );
       _cache[moduleAssetPath] = entry;
       _applyMerged(entry);
+      await _restoreDraftIfAny(moduleAssetPath);
       _recomputeVisibility();
       _error = null;
     } catch (e, st) {
@@ -93,6 +134,19 @@ class FormProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _restoreDraftIfAny(String moduleAssetPath) async {
+    final draft = await _draftService.loadDraft(moduleAssetPath);
+    if (draft == null || draft.isEmpty) return;
+    for (final e in draft.entries) {
+      final v = e.value;
+      if (v is List) {
+        _values[e.key] = v.map((x) => x.toString()).toList();
+      } else {
+        _values[e.key] = v;
+      }
+    }
+  }
+
   void _applyMerged(_CachedMerged m) {
     _moduleFormId = m.moduleFormId;
     _moduleTitle = m.moduleTitle;
@@ -105,16 +159,37 @@ class FormProvider extends ChangeNotifier {
     }
   }
 
+  void _scheduleDraftSave() {
+    final path = _moduleAssetPath;
+    if (path == null) return;
+    _saveTimer?.cancel();
+    _saveTimer = Timer(_saveDebounce, () async {
+      try {
+        await _draftService.saveDraft(path, Map<String, dynamic>.from(_values));
+        _dirty = false;
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('FormProvider._scheduleDraftSave: $e');
+          debugPrintStack(stackTrace: st);
+        }
+      }
+    });
+  }
+
   void setValue(String fieldId, dynamic value) {
     _values[fieldId] = value;
+    _dirty = true;
     _recomputeVisibility();
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   void setMultiSelectValues(String fieldId, List<String> values) {
     _values[fieldId] = List<String>.from(values);
+    _dirty = true;
     _recomputeVisibility();
     notifyListeners();
+    _scheduleDraftSave();
   }
 
   void _recomputeVisibility() {
@@ -166,6 +241,22 @@ class FormProvider extends ChangeNotifier {
   /// Visible fields in display order.
   List<FormFieldDef> visibleFieldsOrdered() {
     return _fields.where((f) => _visibleFieldIds.contains(f.fieldId)).toList();
+  }
+
+  @override
+  void dispose() {
+    _saveTimer?.cancel();
+    if (!_skipPersistOnDispose &&
+        _dirty &&
+        _moduleAssetPath != null) {
+      unawaited(
+        _draftService.saveDraft(
+          _moduleAssetPath!,
+          Map<String, dynamic>.from(_values),
+        ),
+      );
+    }
+    super.dispose();
   }
 }
 

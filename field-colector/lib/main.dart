@@ -1,5 +1,6 @@
 import 'package:field_colector/adapters/real/firebase_auth_adapter.dart';
 import 'package:field_colector/adapters/real/isar_user_adapter.dart';
+import 'package:field_colector/core/database/form_draft_service.dart';
 import 'package:field_colector/core/database/isar_service.dart';
 import 'package:field_colector/core/services/session_validation_service.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
@@ -89,6 +90,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(create: (_) => FieldSessionProvider()),
+        ChangeNotifierProvider(create: (_) => FormDraftService()),
         Provider<MapServices>.value(value: mapServices),
 
         Provider<BirdRecordRemotePort>(create: (_) => FirebaseBirdRecordAdapter(FirebaseFirestore.instance)),
