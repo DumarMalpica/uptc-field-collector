@@ -69,6 +69,12 @@ const List<FieldFormDefinition> kFieldFormCatalog = [
     assetPath: 'assets/data/birds_metadata.json',
     category: FieldFormCategory.biological,
   ),
+  FieldFormDefinition(
+    formId: 'modulo_componente_social_paisaje',
+    title: 'Registro de Componente Social y Paisaje',
+    assetPath: 'assets/data/social_metadata.json',
+    category: FieldFormCategory.social,
+  ),
 ];
 
 Iterable<FieldFormDefinition> formsInCategory(FieldFormCategory c) =>
