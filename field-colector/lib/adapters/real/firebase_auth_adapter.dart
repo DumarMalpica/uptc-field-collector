@@ -143,6 +143,17 @@ class FirebaseAuthAdapter implements AuthPort {
           message: 'Correo o contraseña incorrectos.',
           type: AuthErrorType.invalidCredentials,
         );
+      case 'invalid-email':
+        return AuthException(
+          message: 'El formato del correo no es válido.',
+          type: AuthErrorType.invalidEmail,
+        );
+      case 'weak-password':
+        return AuthException(
+          message:
+              'La contraseña es demasiado débil. Use al menos 6 caracteres y combine letras y números.',
+          type: AuthErrorType.weakPassword,
+        );
       case 'email-already-in-use':
         return AuthException(
           message: 'El correo electrónico ya está registrado.',
@@ -152,6 +163,18 @@ class FirebaseAuthAdapter implements AuthPort {
         return AuthException(
           message: 'Error de red. Verifique su conexión.',
           type: AuthErrorType.networkError,
+        );
+      case 'too-many-requests':
+        return AuthException(
+          message:
+              'Demasiados intentos. Espere unos minutos e intente de nuevo.',
+          type: AuthErrorType.tooManyRequests,
+        );
+      case 'operation-not-allowed':
+        return AuthException(
+          message:
+              'Esta operación no está habilitada. Contacte al administrador.',
+          type: AuthErrorType.unknown,
         );
       default:
         return AuthException(
