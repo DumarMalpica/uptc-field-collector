@@ -61,6 +61,23 @@ class IsarUserAdapter implements UserLocalPort {
     return user;
   }
 
+  @override
+  Future<User?> getRawLocalUser() async {
+    final isar = await IsarService.getInstance();
+
+    final query = isar.userModels.buildQuery<UserModel>(
+      filter: FilterCondition.equalTo(
+        property: 'isActive',
+        value: true,
+      ),
+      limit: 1,
+    );
+    final results = await query.findAll();
+    if (results.isEmpty) return null;
+
+    return results.first.toDomain();
+  }
+
   /// limpieza despues de logout
   @override
   Future<void> clearLocalUser() async {

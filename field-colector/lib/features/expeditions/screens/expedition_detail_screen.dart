@@ -5,6 +5,7 @@ import 'package:field_colector/features/map/download/map_tile_download_flow.dart
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -356,12 +357,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               // En campo
               ElevatedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Próximamente: Modo en campo'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  context.read<FieldSessionProvider>().enterFieldMode();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,

@@ -1,3 +1,5 @@
+import 'package:field_colector/core/services/session_validation_service.dart';
+import 'package:field_colector/domain/entities/session_status.dart';
 import 'package:field_colector/domain/entities/user.dart';
 import 'package:field_colector/domain/mappers/login_user.dart';
 import 'package:field_colector/domain/mappers/register_user_dto_builder.dart';
@@ -15,14 +17,20 @@ import 'package:flutter/material.dart';
 /// mientras [isLoading] es true, no asumir autenticado. [isAuthenticated] exige
 /// [User.hasValidToken] (token + `tokenExpiry` no vencido).
 class Authprovider extends ChangeNotifier {
-  Authprovider({required AuthPort authPort}) : _authPort = authPort;
+  Authprovider({
+    required AuthPort authPort,
+    required SessionValidationService sessionValidation,
+  }) : _authPort = authPort,
+        _sessionValidation = sessionValidation;
 
   final AuthPort _authPort;
+  final SessionValidationService _sessionValidation;
 
   User? _user;
 
   bool _isLoading = true;
   String? _errorMessage;
+  SessionStatus? _lastSessionStatus;
 
   bool get isLoading => _isLoading;
 
@@ -33,12 +41,22 @@ class Authprovider extends ChangeNotifier {
   /// Mensaje tras fallo en [login]. Null si última operación no fue error de credenciales.
   String? get errorMessage => _errorMessage;
 
+  /// Último resultado de [restoreSession] (validación local). Null hasta primer restore.
+  SessionStatus? get lastSessionStatus => _lastSessionStatus;
+
   void _setUser(User user) {
     _user = user;
   }
 
   void _setErrorMessage(String errorMessage) {
     _errorMessage = errorMessage;
+    notifyListeners();
+  }
+
+  /// Limpia [errorMessage] tras edición en formularios (evita mensaje obsoleto).
+  void clearAuthFormError() {
+    if (_errorMessage == null) return;
+    _errorMessage = null;
     notifyListeners();
   }
 
@@ -63,6 +81,7 @@ class Authprovider extends ChangeNotifier {
   Future<void> logout() async {
     await _authPort.logout();
     _user = null;
+    _lastSessionStatus = null;
     _errorMessage = null;
     notifyListeners();
   }
@@ -74,6 +93,7 @@ class Authprovider extends ChangeNotifier {
         credentials.password,
       );
       _setUser(domainUser);
+      _lastSessionStatus = null;
       _errorMessage = null;
       notifyListeners();
     } on AuthException catch (e) {
@@ -93,6 +113,7 @@ class Authprovider extends ChangeNotifier {
         fieldStudy: dto.fieldOfStudy,
       );
       _setUser(domainUser);
+      _lastSessionStatus = null;
       _errorMessage = null;
       notifyListeners();
     } on AuthException catch (e) {
@@ -111,14 +132,36 @@ class Authprovider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Arranque en frío: restaurar sesión persistida por el adaptador (offline primero).
+  /// Arranque en frío: validación local con códigos; si token vencido, intenta refresco vía red.
   Future<void> restoreSession() async {
     _isLoading = true;
     notifyListeners();
     try {
-      await _loadSessionFromPort();
-      // TODO: si el adaptador debe sincronizar perfil remoto tras restore, hacerlo
-      // en AuthPort/adaptador; aquí solo reflejar resultado en [_user].
+      final session = await _sessionValidation.validate();
+      _lastSessionStatus = session.status;
+
+      switch (session.status) {
+        case SessionStatus.valid:
+          if (session.user != null) {
+            _setUser(session.user!);
+            _errorMessage = null;
+          } else {
+            _user = null;
+          }
+          break;
+        case SessionStatus.expired:
+          final refreshed = await _authPort.getCurrentUser();
+          _applySessionUser(refreshed);
+          if (_user == null) {
+            _errorMessage = 'Sesión expirada. Inicie sesión de nuevo.';
+          }
+          break;
+        case SessionStatus.notFound:
+        case SessionStatus.corrupted:
+          _user = null;
+          _errorMessage = null;
+          break;
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

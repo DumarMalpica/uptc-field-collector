@@ -5,5 +5,8 @@ abstract class UserLocalPort {
 
   Future<User?> getLocalUser();
 
+  /// Usuario local activo sin filtrar por vigencia del token.
+  Future<User?> getRawLocalUser();
+
   Future<void> clearLocalUser();
 }

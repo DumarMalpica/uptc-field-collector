@@ -76,6 +76,33 @@ void main() {
       verify(() => mockUserLocalPort.saveUser(any())).called(1);
     });
 
+    test('getCurrentUser: obtiene token, persiste y retorna usuario', () async {
+      final expiracion = DateTime.now().add(const Duration(hours: 1));
+      when(() => mockTokenResult.token).thenReturn('fresh');
+      when(() => mockTokenResult.expirationTime).thenReturn(expiracion);
+      when(() => mockMetadata.creationTime).thenReturn(DateTime(2024));
+      when(() => mockFbUser.uid).thenReturn('uid');
+      when(() => mockFbUser.email).thenReturn('e@e.co');
+      when(() => mockFbUser.displayName).thenReturn('Name');
+      when(() => mockFbUser.metadata).thenReturn(mockMetadata);
+      when(() => mockFbUser.getIdTokenResult()).thenAnswer((_) async => mockTokenResult);
+      when(() => mockFirebaseAuth.currentUser).thenReturn(mockFbUser);
+      when(() => mockUserLocalPort.saveUser(any())).thenAnswer((_) async => {});
+
+      final u = await adapter.getCurrentUser();
+
+      expect(u, isNotNull);
+      expect(u!.token, 'fresh');
+      verify(() => mockUserLocalPort.saveUser(any())).called(1);
+    });
+
+    test('getCurrentUser: null si no hay currentUser', () async {
+      when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+      expect(await adapter.getCurrentUser(), isNull);
+      verifyNever(() => mockUserLocalPort.saveUser(any()));
+    });
+
     test('login fallido: Lanza AuthException si las credenciales son incorrectas', () async {
       when(() => mockFirebaseAuth.signInWithEmailAndPassword(
         email: 'nicolas@citesa.co',

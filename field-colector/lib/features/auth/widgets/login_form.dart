@@ -18,6 +18,41 @@ class _LoginFormState extends State<LoginForm> {
   late final TextEditingController _passwordController;
 
   bool _obscurePassword = true;
+  bool _isLoggingIn = false;
+
+  bool _fieldsFilled() {
+    final mail = _userController.text.trim();
+    final pwd = _passwordController.text;
+    return mail.isNotEmpty && pwd.isNotEmpty;
+  }
+
+  void _onFieldChanged() {
+    context.read<Authprovider>().clearAuthFormError();
+    setState(() {});
+  }
+
+  Future<void> _submit() async {
+    if (!_fieldsFilled()) return;
+    setState(() => _isLoggingIn = true);
+    final auth = context.read<Authprovider>();
+    try {
+      await auth.login(
+        LoginUser(
+          email: _userController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
+      if (!mounted) return;
+      final err = auth.errorMessage;
+      if (err != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(err)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoggingIn = false);
+    }
+  }
 
   @override
   void initState() {
@@ -61,8 +96,9 @@ class _LoginFormState extends State<LoginForm> {
           0,
           TextField(
             controller: _userController,
+            onChanged: (_) => _onFieldChanged(),
             decoration: const InputDecoration(
-              labelText: 'Usuario',
+              labelText: 'Correo',
               suffixIcon: Icon(Icons.person_outline),
             ),
           ),
@@ -72,6 +108,7 @@ class _LoginFormState extends State<LoginForm> {
           1,
           TextField(
             controller: _passwordController,
+            onChanged: (_) => _onFieldChanged(),
             obscureText: _obscurePassword,
             decoration: InputDecoration(
               labelText: 'Contraseña',
@@ -96,19 +133,18 @@ class _LoginFormState extends State<LoginForm> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {
-                context.read<Authprovider>().login(
-                  LoginUser(
-                    email: _userController.text,
-                    password: _passwordController.text,
-                  ),
-                );
-              },
+              onPressed: _fieldsFilled() && !_isLoggingIn ? _submit : null,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryDark,
                 side: const BorderSide(color: AppColors.primaryDark),
               ),
-              child: const Text('Ingresar'),
+              child: _isLoggingIn
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Ingresar'),
             ),
           ),
         ),

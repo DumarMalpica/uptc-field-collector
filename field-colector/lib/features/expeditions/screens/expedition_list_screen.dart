@@ -1,10 +1,12 @@
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/features/expeditions/data/fake_expeditions_data.dart';
+import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_create_screen.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_detail_screen.dart';
 import 'package:field_colector/features/expeditions/widgets/expedition_card.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Pantalla principal de expediciones.
 ///
@@ -32,10 +34,36 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
   /// Cuando es true, se muestra la pantalla de creación.
   bool _showCreate = false;
 
+  FieldSessionProvider? _fieldSessionListened;
+  int _seenEnterFieldEpoch = 0;
+
   @override
   void dispose() {
+    _fieldSessionListened?.removeListener(_onFieldSessionChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final field = context.read<FieldSessionProvider>();
+    if (!identical(_fieldSessionListened, field)) {
+      _fieldSessionListened?.removeListener(_onFieldSessionChanged);
+      _fieldSessionListened = field;
+      _seenEnterFieldEpoch = field.enterFieldEpoch;
+      _fieldSessionListened!.addListener(_onFieldSessionChanged);
+    }
+  }
+
+  void _onFieldSessionChanged() {
+    final field = _fieldSessionListened!;
+    if (field.enterFieldEpoch <= _seenEnterFieldEpoch) return;
+    setState(() {
+      _seenEnterFieldEpoch = field.enterFieldEpoch;
+      _detailOuting = null;
+      _showCreate = false;
+    });
   }
 
   List<Outing> get _filtered {

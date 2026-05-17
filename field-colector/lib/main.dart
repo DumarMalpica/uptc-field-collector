@@ -1,5 +1,9 @@
-import 'package:field_colector/adapters/fake/fake_auth_adapter.dart';
+import 'package:field_colector/adapters/real/firebase_auth_adapter.dart';
+import 'package:field_colector/adapters/real/isar_user_adapter.dart';
+import 'package:field_colector/core/database/isar_service.dart';
+import 'package:field_colector/core/services/session_validation_service.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/home/screens/home.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_theme.dart';
@@ -8,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -42,23 +47,48 @@ Future<void> main() async {
   await FMTCObjectBoxBackend().initialise();
   await initializeDateFormatting('es');
 
+  await IsarService.getInstance();
+  final userLocalAdapter = IsarUserAdapter();
+  final sessionValidation = SessionValidationService(userLocalAdapter);
+  final authPort = FirebaseAuthAdapter(
+    FirebaseAuth.instance,
+    userLocalAdapter,
+  );
+
   final mapServices = MapServices.create();
 
-  runApp(MyApp(mapServices: mapServices));
+  runApp(
+    MyApp(
+      mapServices: mapServices,
+      authPort: authPort,
+      sessionValidation: sessionValidation,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.mapServices});
+  const MyApp({
+    super.key,
+    required this.mapServices,
+    required this.authPort,
+    required this.sessionValidation,
+  });
 
   final MapServices mapServices;
+  final FirebaseAuthAdapter authPort;
+  final SessionValidationService sessionValidation;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => Authprovider(authPort: FakeAuthAdapter()),
+          create: (_) => Authprovider(
+            authPort: authPort,
+            sessionValidation: sessionValidation,
+          ),
         ),
+        ChangeNotifierProvider(create: (_) => FieldSessionProvider()),
         Provider<MapServices>.value(value: mapServices),
 
         Provider<BirdRecordRemotePort>(create: (_) => FirebaseBirdRecordAdapter(FirebaseFirestore.instance)),
