@@ -38,9 +38,11 @@ class AuthException implements Exception {
 
 enum AuthErrorType {
   invalidCredentials,
+  invalidEmail,
   emailAlreadyInUse,
   weakPassword,
   networkError,
   sessionExpired,
+  tooManyRequests,
   unknown,
 }

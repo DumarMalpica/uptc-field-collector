@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:field_colector/domain/ports/locator_provider.dart';
 import 'package:field_colector/features/dashboard/widgets/field_registration_panel.dart';
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
@@ -31,6 +33,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   SidebarSection _activeSection = SidebarSection.home;
 
   FieldSessionProvider? _fieldSessionListened;
+
+  final GlobalKey<FieldRegistrationPanelState> _fieldRegistrationPanelKey =
+      GlobalKey<FieldRegistrationPanelState>();
 
   @override
   void initState() {
@@ -90,15 +95,25 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  void _toggleSidebar() {
-    if (_sidebarOpen) {
-      _closeSidebar();
-    } else {
-      _openSidebar();
-    }
+  void _selectSection(SidebarSection section) {
+    unawaited(_selectSectionAsync(section));
   }
 
-  void _selectSection(SidebarSection section) {
+  Future<void> _selectSectionAsync(SidebarSection section) async {
+    if (_activeSection == SidebarSection.fieldRegistration &&
+        section != SidebarSection.fieldRegistration &&
+        (_fieldRegistrationPanelKey.currentState?.isFormOpen ?? false)) {
+      final choice = await _showLeaveFormDraftDialog();
+      if (!mounted) return;
+      if (choice == null) return;
+      if (choice == _LeaveDraftChoice.discard) {
+        await _fieldRegistrationPanelKey.currentState!.discardOpenFormDraft();
+      } else {
+        await _fieldRegistrationPanelKey.currentState!.flushOpenFormDraft();
+      }
+      if (!mounted) return;
+    }
+
     if (section == SidebarSection.home) {
       if (_sidebarOpen) _closeSidebar();
       setState(() => _activeSection = section);
@@ -108,10 +123,43 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (!_sidebarOpen) _openSidebar();
   }
 
+  Future<_LeaveDraftChoice?> _showLeaveFormDraftDialog() {
+    return showDialog<_LeaveDraftChoice>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Datos sin guardar'),
+        content: const Text(
+          'Tienes datos sin guardar. Se conservarán como borrador a menos que los descartes.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(ctx).pop(_LeaveDraftChoice.discard),
+            child: const Text('Descartar'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(ctx).pop(_LeaveDraftChoice.conserve),
+            child: const Text('Conservar borrador'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _onPopInvoked(bool didPop) async {
     if (didPop) return;
 
     if (_sidebarOpen) {
+      if (_activeSection == SidebarSection.fieldRegistration &&
+          (_fieldRegistrationPanelKey.currentState?.isFormOpen ?? false)) {
+        await _fieldRegistrationPanelKey.currentState!.closeFormToCatalog();
+        return;
+      }
       _closeSidebar();
       setState(() => _activeSection = SidebarSection.home);
       return;
@@ -145,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       case SidebarSection.expeditions:
         return const ExpeditionListScreen();
       case SidebarSection.fieldRegistration:
-        return const FieldRegistrationPanel();
+        return FieldRegistrationPanel(key: _fieldRegistrationPanelKey);
       case SidebarSection.home:
       case SidebarSection.profile:
       case SidebarSection.settings:
@@ -170,7 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          _onPopInvoked(didPop);
+          unawaited(_onPopInvoked(didPop));
         }
       },
       child: Scaffold(
@@ -283,3 +331,5 @@ class _DashboardScreenState extends State<DashboardScreen>
     ));
   }
 }
+
+enum _LeaveDraftChoice { discard, conserve }

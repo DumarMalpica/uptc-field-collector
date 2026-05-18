@@ -30,6 +30,7 @@ class Authprovider extends ChangeNotifier {
 
   bool _isLoading = true;
   String? _errorMessage;
+  AuthErrorType? _lastAuthError;
   SessionStatus? _lastSessionStatus;
 
   bool get isLoading => _isLoading;
@@ -38,8 +39,11 @@ class Authprovider extends ChangeNotifier {
 
   String? get token => _user?.token;
 
-  /// Mensaje tras fallo en [login]. Null si última operación no fue error de credenciales.
+  /// Mensaje tras fallo en [login] / [register]. Null si no hubo error reciente de auth.
   String? get errorMessage => _errorMessage;
+
+  /// Tipo del último [AuthException] en [login] / [register]. Null si no hubo fallo reciente.
+  AuthErrorType? get lastAuthError => _lastAuthError;
 
   /// Último resultado de [restoreSession] (validación local). Null hasta primer restore.
   SessionStatus? get lastSessionStatus => _lastSessionStatus;
@@ -48,15 +52,17 @@ class Authprovider extends ChangeNotifier {
     _user = user;
   }
 
-  void _setErrorMessage(String errorMessage) {
-    _errorMessage = errorMessage;
+  void _setAuthFailure(AuthException e) {
+    _errorMessage = e.message;
+    _lastAuthError = e.type;
     notifyListeners();
   }
 
-  /// Limpia [errorMessage] tras edición en formularios (evita mensaje obsoleto).
+  /// Limpia [errorMessage] / [lastAuthError] tras edición en formularios (evita mensaje obsoleto).
   void clearAuthFormError() {
-    if (_errorMessage == null) return;
+    if (_errorMessage == null && _lastAuthError == null) return;
     _errorMessage = null;
+    _lastAuthError = null;
     notifyListeners();
   }
 
@@ -65,6 +71,7 @@ class Authprovider extends ChangeNotifier {
     if (restored != null && restored.hasValidToken) {
       _setUser(restored);
       _errorMessage = null;
+      _lastAuthError = null;
     } else {
       _user = null;
     }
@@ -83,6 +90,7 @@ class Authprovider extends ChangeNotifier {
     _user = null;
     _lastSessionStatus = null;
     _errorMessage = null;
+    _lastAuthError = null;
     notifyListeners();
   }
 
@@ -95,11 +103,11 @@ class Authprovider extends ChangeNotifier {
       _setUser(domainUser);
       _lastSessionStatus = null;
       _errorMessage = null;
+      _lastAuthError = null;
       notifyListeners();
     } on AuthException catch (e) {
       _user = null;
-      _setErrorMessage(e.message);
-      // TODO: exponer AuthException.type en UI (SnackBar por red vs credenciales).
+      _setAuthFailure(e);
     }
   }
 
@@ -115,10 +123,11 @@ class Authprovider extends ChangeNotifier {
       _setUser(domainUser);
       _lastSessionStatus = null;
       _errorMessage = null;
+      _lastAuthError = null;
       notifyListeners();
     } on AuthException catch (e) {
       _user = null;
-      _setErrorMessage(e.message);
+      _setAuthFailure(e);
     }
   }
 
@@ -145,6 +154,7 @@ class Authprovider extends ChangeNotifier {
           if (session.user != null) {
             _setUser(session.user!);
             _errorMessage = null;
+            _lastAuthError = null;
           } else {
             _user = null;
           }
@@ -154,12 +164,14 @@ class Authprovider extends ChangeNotifier {
           _applySessionUser(refreshed);
           if (_user == null) {
             _errorMessage = 'Sesión expirada. Inicie sesión de nuevo.';
+            _lastAuthError = null;
           }
           break;
         case SessionStatus.notFound:
         case SessionStatus.corrupted:
           _user = null;
           _errorMessage = null;
+          _lastAuthError = null;
           break;
       }
     } finally {

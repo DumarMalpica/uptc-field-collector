@@ -1,9 +1,11 @@
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/auth/widgets/login_form.dart';
 import 'package:field_colector/features/auth/widgets/register_form.dart';
 import 'package:field_colector/features/auth/widgets/welcome_section.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 enum _LoginZone { welcome, login, register }
 
@@ -60,6 +62,11 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _switchTo(_LoginZone zone) {
     if (zone == _zone) return;
+    final prev = _zone;
+    if ((prev == _LoginZone.login && zone == _LoginZone.register) ||
+        (prev == _LoginZone.register && zone == _LoginZone.login)) {
+      context.read<Authprovider>().clearAuthFormError();
+    }
     final wasForm = _isFormZone;
     setState(() => _zone = zone);
 

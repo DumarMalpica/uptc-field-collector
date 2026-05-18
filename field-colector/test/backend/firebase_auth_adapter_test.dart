@@ -121,6 +121,140 @@ void main() {
       verifyNever(() => mockUserLocalPort.saveUser(any()));
     });
 
+    group('register', () {
+      test('weak-password → AuthException weakPassword', () async {
+        when(
+          () => mockFirebaseAuth.createUserWithEmailAndPassword(
+            email: 'a@b.co',
+            password: '123',
+          ),
+        ).thenThrow(fb.FirebaseAuthException(code: 'weak-password'));
+
+        expect(
+          () => adapter.register(
+            email: 'a@b.co',
+            password: '123',
+            fullName: 'Test User',
+          ),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.type,
+              'type',
+              AuthErrorType.weakPassword,
+            ),
+          ),
+        );
+
+        verifyNever(() => mockUserLocalPort.saveUser(any()));
+      });
+
+      test('invalid-email → AuthException invalidEmail', () async {
+        when(
+          () => mockFirebaseAuth.createUserWithEmailAndPassword(
+            email: 'bad',
+            password: 'Password123!',
+          ),
+        ).thenThrow(fb.FirebaseAuthException(code: 'invalid-email'));
+
+        expect(
+          () => adapter.register(
+            email: 'bad',
+            password: 'Password123!',
+            fullName: 'Test User',
+          ),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.type,
+              'type',
+              AuthErrorType.invalidEmail,
+            ),
+          ),
+        );
+
+        verifyNever(() => mockUserLocalPort.saveUser(any()));
+      });
+
+      test('too-many-requests → AuthException tooManyRequests', () async {
+        when(
+          () => mockFirebaseAuth.createUserWithEmailAndPassword(
+            email: 'a@b.co',
+            password: 'Password123!',
+          ),
+        ).thenThrow(fb.FirebaseAuthException(code: 'too-many-requests'));
+
+        expect(
+          () => adapter.register(
+            email: 'a@b.co',
+            password: 'Password123!',
+            fullName: 'Test User',
+          ),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.type,
+              'type',
+              AuthErrorType.tooManyRequests,
+            ),
+          ),
+        );
+
+        verifyNever(() => mockUserLocalPort.saveUser(any()));
+      });
+
+      test('operation-not-allowed → AuthException unknown', () async {
+        when(
+          () => mockFirebaseAuth.createUserWithEmailAndPassword(
+            email: 'a@b.co',
+            password: 'Password123!',
+          ),
+        ).thenThrow(fb.FirebaseAuthException(code: 'operation-not-allowed'));
+
+        expect(
+          () => adapter.register(
+            email: 'a@b.co',
+            password: 'Password123!',
+            fullName: 'Test User',
+          ),
+          throwsA(
+            isA<AuthException>()
+                .having((e) => e.type, 'type', AuthErrorType.unknown)
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('administrador'),
+                ),
+          ),
+        );
+
+        verifyNever(() => mockUserLocalPort.saveUser(any()));
+      });
+
+      test('email-already-in-use → AuthException emailAlreadyInUse', () async {
+        when(
+          () => mockFirebaseAuth.createUserWithEmailAndPassword(
+            email: 'taken@b.co',
+            password: 'Password123!',
+          ),
+        ).thenThrow(fb.FirebaseAuthException(code: 'email-already-in-use'));
+
+        expect(
+          () => adapter.register(
+            email: 'taken@b.co',
+            password: 'Password123!',
+            fullName: 'Test User',
+          ),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.type,
+              'type',
+              AuthErrorType.emailAlreadyInUse,
+            ),
+          ),
+        );
+
+        verifyNever(() => mockUserLocalPort.saveUser(any()));
+      });
+    });
+
 
     test('validateOfflineSession: Retorna usuario si hay token local válido', () async {
       final localUser = User(

@@ -1,0 +1,318 @@
+{
+    "form_id": "modulo_componente_social_paisaje",
+    "title": "Registro de Componente Social y Paisaje",
+    "fields": [
+      {
+        "field_id": "id_encuestado",
+        "label": "ID Encuestado",
+        "type": "text",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 1
+      },
+      {
+        "field_id": "nombre_actor",
+        "label": "Nombre del Actor",
+        "type": "text",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 2
+      },
+      {
+        "field_id": "tipo_actor",
+        "label": "Tipo de Actor",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 3,
+        "options": [
+          { "label": "Campesino", "value": "campesino" },
+          { "label": "Institucional", "value": "institucional" },
+          { "label": "Empresa", "value": "empresa" },
+          { "label": "ONG", "value": "ong" }
+        ]
+      },
+      {
+        "field_id": "edad",
+        "label": "Edad",
+        "type": "number_decimal",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 4
+      },
+      {
+        "field_id": "genero",
+        "label": "Género",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 5,
+        "options": [
+          { "label": "Masculino", "value": "masculino" },
+          { "label": "Femenino", "value": "femenino" },
+          { "label": "Otro", "value": "otro" }
+        ]
+      },
+      {
+        "field_id": "nivel_educativo",
+        "label": "Nivel Educativo",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 6,
+        "options": [
+          { "label": "Sin escolaridad", "value": "sin_escolaridad" },
+          { "label": "Primaria", "value": "primaria" },
+          { "label": "Secundaria", "value": "secundaria" },
+          { "label": "Técnico / Tecnológico", "value": "tecnico" },
+          { "label": "Universitario", "value": "universitario" },
+          { "label": "Posgrado", "value": "posgrado" }
+        ]
+      },
+      {
+        "field_id": "actividad_principal",
+        "label": "Actividad Principal",
+        "type": "text",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 7
+      },
+      {
+        "field_id": "tiempo_en_territorio",
+        "label": "Tiempo en el Territorio (años)",
+        "type": "number_decimal",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 8
+      },
+      {
+        "field_id": "ubicacion_municipio",
+        "label": "Municipio",
+        "type": "text",
+        "is_visible_by_default": true,
+        "is_required": false,
+        "order": 9
+      },
+      {
+        "field_id": "ubicacion_vereda",
+        "label": "Vereda",
+        "type": "text",
+        "is_visible_by_default": true,
+        "is_required": false,
+        "order": 10
+      },
+      {
+        "field_id": "dependencia_recursos_naturales",
+        "label": "Dependencia de Recursos Naturales",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 11,
+        "options": [
+          { "label": "Alta", "value": "alta" },
+          { "label": "Media", "value": "media" },
+          { "label": "Baja", "value": "baja" }
+        ]
+      },
+      {
+        "field_id": "percepcion_cambio_cobertura",
+        "label": "Percepción de Cambio en Cobertura (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 12,
+        "options": [
+          { "label": "1 - Ningún cambio", "value": "1" },
+          { "label": "2 - Cambio leve", "value": "2" },
+          { "label": "3 - Cambio moderado", "value": "3" },
+          { "label": "4 - Cambio significativo", "value": "4" },
+          { "label": "5 - Cambio muy alto", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "tipo_cambio_observado",
+        "label": "Tipo de Cambio Observado",
+        "type": "text_long",
+        "is_visible_by_default": true,
+        "is_required": false,
+        "order": 13
+      },
+      {
+        "field_id": "participacion_organizaciones",
+        "label": "¿Participa en Organizaciones?",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 14,
+        "options": [
+          {
+            "label": "Sí",
+            "value": "si",
+            "action": "show_child",
+            "target_field": "nombre_organizacion"
+          },
+          { "label": "No", "value": "no" }
+        ]
+      },
+      {
+        "field_id": "nombre_organizacion",
+        "label": "Nombre de la Organización",
+        "type": "text",
+        "is_visible_by_default": false,
+        "is_required": true,
+        "order": 15
+      },
+      {
+        "field_id": "frecuencia_interaccion_actores",
+        "label": "Frecuencia de Interacción con Actores (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 16,
+        "options": [
+          { "label": "1 - Nunca", "value": "1" },
+          { "label": "2 - Raramente", "value": "2" },
+          { "label": "3 - Ocasionalmente", "value": "3" },
+          { "label": "4 - Frecuentemente", "value": "4" },
+          { "label": "5 - Siempre", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "actores_clave_conectados",
+        "label": "Actores Clave Conectados",
+        "type": "text_long",
+        "is_visible_by_default": true,
+        "is_required": false,
+        "order": 17
+      },
+      {
+        "field_id": "tipo_relacion",
+        "label": "Tipo de Relación",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 18,
+        "options": [
+          { "label": "Cooperación", "value": "cooperacion" },
+          { "label": "Conflicto", "value": "conflicto" },
+          { "label": "Intercambio", "value": "intercambio" }
+        ]
+      },
+      {
+        "field_id": "nivel_confianza",
+        "label": "Nivel de Confianza (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 19,
+        "options": [
+          { "label": "1 - Muy bajo", "value": "1" },
+          { "label": "2 - Bajo", "value": "2" },
+          { "label": "3 - Medio", "value": "3" },
+          { "label": "4 - Alto", "value": "4" },
+          { "label": "5 - Muy alto", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "acceso_informacion_ambiental",
+        "label": "Acceso a Información Ambiental (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 20,
+        "options": [
+          { "label": "1 - Ningún acceso", "value": "1" },
+          { "label": "2 - Muy limitado", "value": "2" },
+          { "label": "3 - Moderado", "value": "3" },
+          { "label": "4 - Bueno", "value": "4" },
+          { "label": "5 - Muy bueno", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "uso_tecnologias",
+        "label": "Uso de Tecnologías",
+        "type": "text_long",
+        "is_visible_by_default": true,
+        "is_required": false,
+        "order": 21
+      },
+      {
+        "field_id": "percepcion_conectividad_territorial",
+        "label": "Percepción de Conectividad Territorial (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 22,
+        "options": [
+          { "label": "1 - Sin conectividad", "value": "1" },
+          { "label": "2 - Muy baja", "value": "2" },
+          { "label": "3 - Moderada", "value": "3" },
+          { "label": "4 - Buena", "value": "4" },
+          { "label": "5 - Muy buena", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "percepcion_fragmentacion",
+        "label": "Percepción de Fragmentación (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 23,
+        "options": [
+          { "label": "1 - Sin fragmentación", "value": "1" },
+          { "label": "2 - Muy baja", "value": "2" },
+          { "label": "3 - Moderada", "value": "3" },
+          { "label": "4 - Alta", "value": "4" },
+          { "label": "5 - Muy alta", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "cambios_practicas_productivas",
+        "label": "¿Ha Realizado Cambios en Prácticas Productivas?",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 24,
+        "options": [
+          {
+            "label": "Sí",
+            "value": "si",
+            "action": "show_child",
+            "target_field": "tipo_practica"
+          },
+          { "label": "No", "value": "no" }
+        ]
+      },
+      {
+        "field_id": "tipo_practica",
+        "label": "Tipo de Práctica Productiva",
+        "type": "text_long",
+        "is_visible_by_default": false,
+        "is_required": true,
+        "order": 25
+      },
+      {
+        "field_id": "impacto_percibido_paisaje",
+        "label": "Impacto Percibido en el Paisaje (1-5)",
+        "type": "single_select",
+        "is_visible_by_default": true,
+        "is_required": true,
+        "order": 26,
+        "options": [
+          { "label": "1 - Sin impacto", "value": "1" },
+          { "label": "2 - Impacto leve", "value": "2" },
+          { "label": "3 - Impacto moderado", "value": "3" },
+          { "label": "4 - Impacto significativo", "value": "4" },
+          { "label": "5 - Impacto muy alto", "value": "5" }
+        ]
+      },
+      {
+        "field_id": "observaciones",
+        "label": "Observaciones",
+        "type": "text_long",
+        "is_visible_by_default": true,
+        "is_required": false,
+        "order": 27
+      }
+    ]
+  }
