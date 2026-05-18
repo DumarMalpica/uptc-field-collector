@@ -5,6 +5,7 @@ import 'package:field_colector/features/dashboard/widgets/field_registration_pan
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
+import 'package:field_colector/features/profile/widgets/profile_section.dart';
 import 'package:field_colector/features/map/screens/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -194,8 +195,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         return const ExpeditionListScreen();
       case SidebarSection.fieldRegistration:
         return FieldRegistrationPanel(key: _fieldRegistrationPanelKey);
-      case SidebarSection.home:
       case SidebarSection.profile:
+        return const ProfileSection();
+      case SidebarSection.home:
       case SidebarSection.settings:
         return Center(
           child: Text(
