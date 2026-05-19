@@ -1,4 +1,8 @@
 import 'package:field_colector/adapters/geolocator_provider.dart';
+import 'package:field_colector/core/database/app_settings_store.dart';
+import 'package:field_colector/core/database/form_draft_service.dart';
+import 'package:field_colector/features/map/map_services.dart';
+import 'package:field_colector/features/settings/providers/settings_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mockito/mockito.dart';
@@ -7,8 +11,16 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 void main() {
   late GeolocatorPlatform savedPlatform;
 
+  late SettingsProvider settings;
+
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     savedPlatform = GeolocatorPlatform.instance;
+    settings = SettingsProvider(
+      store: AppSettingsStore(),
+      mapServices: MapServices.create(),
+      formDrafts: FormDraftService(),
+    );
   });
 
   tearDown(() {
@@ -26,7 +38,7 @@ void main() {
         ),
       );
 
-      final sut = GeolocatorProvider();
+      final sut = GeolocatorProvider(settings);
       final c = await sut.getCurrentLocation();
 
       expect(c.latitude, -33.4489);
@@ -41,28 +53,40 @@ void main() {
         GeolocatorPlatform.instance = _TestGeolocatorPlatform(
           checkPermissionResult: LocationPermission.whileInUse,
         );
-        expect(await GeolocatorProvider().checkLocationPermissions(), isTrue);
+        expect(
+          await GeolocatorProvider(settings).checkLocationPermissions(),
+          isTrue,
+        );
       });
 
       test('returns true when permission is always', () async {
         GeolocatorPlatform.instance = _TestGeolocatorPlatform(
           checkPermissionResult: LocationPermission.always,
         );
-        expect(await GeolocatorProvider().checkLocationPermissions(), isTrue);
+        expect(
+          await GeolocatorProvider(settings).checkLocationPermissions(),
+          isTrue,
+        );
       });
 
       test('returns false when permission is denied', () async {
         GeolocatorPlatform.instance = _TestGeolocatorPlatform(
           checkPermissionResult: LocationPermission.denied,
         );
-        expect(await GeolocatorProvider().checkLocationPermissions(), isFalse);
+        expect(
+          await GeolocatorProvider(settings).checkLocationPermissions(),
+          isFalse,
+        );
       });
 
       test('returns false when permission is deniedForever', () async {
         GeolocatorPlatform.instance = _TestGeolocatorPlatform(
           checkPermissionResult: LocationPermission.deniedForever,
         );
-        expect(await GeolocatorProvider().checkLocationPermissions(), isFalse);
+        expect(
+          await GeolocatorProvider(settings).checkLocationPermissions(),
+          isFalse,
+        );
       });
     });
 
@@ -70,12 +94,18 @@ void main() {
       GeolocatorPlatform.instance = _TestGeolocatorPlatform(
         isLocationServiceEnabledResult: false,
       );
-      expect(await GeolocatorProvider().isLocationEnabled(), isFalse);
+      expect(
+        await GeolocatorProvider(settings).isLocationEnabled(),
+        isFalse,
+      );
 
       GeolocatorPlatform.instance = _TestGeolocatorPlatform(
         isLocationServiceEnabledResult: true,
       );
-      expect(await GeolocatorProvider().isLocationEnabled(), isTrue);
+      expect(
+        await GeolocatorProvider(settings).isLocationEnabled(),
+        isTrue,
+      );
     });
 
     group('requestLocationPermissions', () {
@@ -84,7 +114,10 @@ void main() {
           checkPermissionResult: LocationPermission.denied,
           requestPermissionResult: LocationPermission.whileInUse,
         );
-        expect(await GeolocatorProvider().requestLocationPermissions(), isTrue);
+        expect(
+          await GeolocatorProvider(settings).requestLocationPermissions(),
+          isTrue,
+        );
       });
 
       test('returns false when still denied after request', () async {
@@ -92,7 +125,10 @@ void main() {
           checkPermissionResult: LocationPermission.denied,
           requestPermissionResult: LocationPermission.denied,
         );
-        expect(await GeolocatorProvider().requestLocationPermissions(), isFalse);
+        expect(
+          await GeolocatorProvider(settings).requestLocationPermissions(),
+          isFalse,
+        );
       });
 
       test('does not change outcome when already deniedForever', () async {
@@ -100,14 +136,20 @@ void main() {
           checkPermissionResult: LocationPermission.deniedForever,
           requestPermissionResult: LocationPermission.whileInUse,
         );
-        expect(await GeolocatorProvider().requestLocationPermissions(), isFalse);
+        expect(
+          await GeolocatorProvider(settings).requestLocationPermissions(),
+          isFalse,
+        );
       });
 
       test('returns true when already granted', () async {
         GeolocatorPlatform.instance = _TestGeolocatorPlatform(
           checkPermissionResult: LocationPermission.whileInUse,
         );
-        expect(await GeolocatorProvider().requestLocationPermissions(), isTrue);
+        expect(
+          await GeolocatorProvider(settings).requestLocationPermissions(),
+          isTrue,
+        );
       });
     });
   });

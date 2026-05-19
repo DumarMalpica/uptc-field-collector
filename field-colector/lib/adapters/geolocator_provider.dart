@@ -1,14 +1,30 @@
+import 'package:field_colector/domain/entities/app_settings.dart';
 import 'package:field_colector/domain/entities/coordinate.dart';
 import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/features/settings/providers/settings_provider.dart';
 import 'package:geolocator/geolocator.dart';
 
 /// Implementacion del proveedor de localizacion usando Geolocator
 class GeolocatorProvider implements LocatorProvider {
+  GeolocatorProvider(this._settings);
+
+  final SettingsProvider _settings;
+
+  LocationAccuracy _accuracyForSettings() {
+    switch (_settings.gpsAccuracy) {
+      case GpsAccuracyLevel.high:
+        return LocationAccuracy.best;
+      case GpsAccuracyLevel.balanced:
+        return LocationAccuracy.medium;
+      case GpsAccuracyLevel.low:
+        return LocationAccuracy.low;
+    }
+  }
+
   @override
   Future<Coordinate> getCurrentLocation() async {
-    //Configuramos la precision de la localizacion
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.best,
+    final locationSettings = LocationSettings(
+      accuracy: _accuracyForSettings(),
     );
 
     //Obtenemos la posicion actual
