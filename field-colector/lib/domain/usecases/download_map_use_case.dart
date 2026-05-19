@@ -3,6 +3,7 @@
 import 'package:field_colector/domain/entities/offline_area.dart';
 import 'package:field_colector/domain/ports/maps/map_tile_cache.dart';
 import 'package:field_colector/domain/ports/maps/offline_area_repository.dart';
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/domain/utils/offline_area_id.dart';
 
 class DownloadMapUseCase {
@@ -19,7 +20,11 @@ class DownloadMapUseCase {
     required double radius,
     required String name,
   }) async {
-    // Paso 3 del diagrama
+    if (!isValidLatLng(lat, lon)) {
+      throw ArgumentError('Coordenadas inválidas para descarga de mapa '
+          '(lat: $lat, lon: $lon)');
+    }
+
     final newArea = OfflineArea(
       id: generateOfflineAreaId(),
       name: name,

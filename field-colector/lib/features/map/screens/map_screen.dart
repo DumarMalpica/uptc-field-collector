@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:field_colector/domain/entities/offline_area.dart';
 import 'package:field_colector/domain/maps/offline_area_spatial.dart';
 import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/settings/providers/settings_provider.dart';
 import 'package:field_colector/features/map/models/map_record_pin.dart';
@@ -90,8 +91,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   bool _gpsStartInFlight = false;
   int? _gpsIntervalSeconds;
 
-  LatLng get _mapInitialCenter =>
-      widget.initialMapCenter ?? _userPos ?? _fallbackCenter;
+  LatLng get _mapInitialCenter {
+    final candidate = widget.initialMapCenter ?? _userPos;
+    if (candidate != null &&
+        isValidLatLng(candidate.latitude, candidate.longitude)) {
+      return candidate;
+    }
+    return _fallbackCenter;
+  }
 
   @override
   void initState() {
@@ -254,8 +261,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (!widget.enableLiveGps) return;
     try {
       final c = await widget.locator.getCurrentLocation();
-      if (!c.isFinite) return;
-      final here = LatLng(c.latitude, c.longitude);
+      final here = tryLatLng(c.latitude, c.longitude);
+      if (here == null) {
+        if (mounted) {
+          setState(() =>
+              _activityLine = 'Sin señal GPS. Reintente en exteriores.');
+        }
+        return;
+      }
       if (!mounted) return;
 
       final areas = await services.areaRepository.getSavedAreas();
@@ -274,6 +287,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       setState(() {
         _userPos = here;
+        _activityLine = null;
         _savedAreas = areas;
         _syncStrategyFields(services, explicitZoneId: zone?.id);
       });

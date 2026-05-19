@@ -5,6 +5,7 @@
 /// mapa en [FormProvider] y se notifica a [FormField] para validación de
 /// obligatoriedad dentro del [Form] padre.
 import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:provider/provider.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
@@ -56,7 +57,7 @@ class _FormGpsCaptureFieldState extends State<FormGpsCaptureField> {
         return;
       }
       final c = await locator.getCurrentLocation();
-      if (!c.isFinite) {
+      if (!isValidLatLng(c.latitude, c.longitude)) {
         setState(() {
           _busy = false;
           _error = 'GPS devolvió coordenadas inválidas';
