@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:field_colector/domain/entities/offline_area.dart';
 import 'package:field_colector/domain/maps/offline_area_spatial.dart';
 import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/features/map/map_services.dart';
+import 'package:field_colector/features/settings/providers/settings_provider.dart';
 import 'package:field_colector/features/map/models/map_record_pin.dart';
+import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -63,7 +66,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   );
 
   static const String _previewStoreId = 'field_preview';
-  static const Duration _gpsInterval = Duration(seconds: 22);
   static const double _minMoveMeters = 35;
 
   final MapController _mapController = MapController();
@@ -87,9 +89,16 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   Timer? _gpsTimer;
   bool _gpsAllowed = false;
   bool _gpsStartInFlight = false;
+  int? _gpsIntervalSeconds;
 
-  LatLng get _mapInitialCenter =>
-      widget.initialMapCenter ?? _userPos ?? _fallbackCenter;
+  LatLng get _mapInitialCenter {
+    final candidate = widget.initialMapCenter ?? _userPos;
+    if (candidate != null &&
+        isValidLatLng(candidate.latitude, candidate.longitude)) {
+      return candidate;
+    }
+    return _fallbackCenter;
+  }
 
   @override
   void initState() {
@@ -104,15 +113,28 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       final services = context.read<MapServices>();
       unawaited(_tryStartGps(services));
-      if (_gpsAllowed) _startGpsTimer();
+      if (_gpsAllowed) _startGpsTimer(context.read<SettingsProvider>());
     } else {
       _stopGpsTimer();
     }
   }
 
+  Duration _gpsInterval(SettingsProvider settings) => Duration(
+        seconds: settings.locationUpdateIntervalSeconds,
+      );
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final settings = context.read<SettingsProvider>();
+    final intervalSec = settings.locationUpdateIntervalSeconds;
+    if (_gpsIntervalSeconds != null &&
+        _gpsIntervalSeconds != intervalSec &&
+        _gpsAllowed) {
+      _startGpsTimer(settings);
+    }
+    _gpsIntervalSeconds = intervalSec;
+
     final services = context.read<MapServices>();
     _previewFuture ??= services.tileCache.ensureStoreExists(_previewStoreId);
     _connSub ??= services.reachability.onConnectivityChanged.listen((online) {
@@ -173,16 +195,17 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         _activityLine = null;
       });
       await _refreshUserPosition(services, moveCamera: true);
-      _startGpsTimer();
+      _startGpsTimer(context.read<SettingsProvider>());
     } finally {
       _gpsStartInFlight = false;
     }
   }
 
-  void _startGpsTimer() {
+  void _startGpsTimer(SettingsProvider settings) {
     if (!widget.enableLiveGps || !_gpsAllowed) return;
     _gpsTimer?.cancel();
-    _gpsTimer = Timer.periodic(_gpsInterval, (_) {
+    _gpsIntervalSeconds = settings.locationUpdateIntervalSeconds;
+    _gpsTimer = Timer.periodic(_gpsInterval(settings), (_) {
       if (!mounted) return;
       unawaited(_refreshUserPosition(context.read<MapServices>()));
     });
@@ -238,7 +261,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (!widget.enableLiveGps) return;
     try {
       final c = await widget.locator.getCurrentLocation();
-      final here = LatLng(c.latitude, c.longitude);
+      final here = tryLatLng(c.latitude, c.longitude);
+      if (here == null) {
+        if (mounted) {
+          setState(() =>
+              _activityLine = 'Sin señal GPS. Reintente en exteriores.');
+        }
+        return;
+      }
       if (!mounted) return;
 
       final areas = await services.areaRepository.getSavedAreas();
@@ -257,6 +287,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       setState(() {
         _userPos = here;
+        _activityLine = null;
         _savedAreas = areas;
         _syncStrategyFields(services, explicitZoneId: zone?.id);
       });
@@ -281,7 +312,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final services = context.read<MapServices>();
+    final settings = context.watch<SettingsProvider>();
     final initial = _mapInitialCenter;
+    final mapType = settings.mapType;
 
     return FutureBuilder<void>(
       future: _previewFuture,
@@ -318,7 +351,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: initial,
-                  initialZoom: 15,
+                  initialZoom: settings.defaultZoom,
                   minZoom: 3,
                   maxZoom: 19,
                 ),
@@ -327,7 +360,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     key: ValueKey(
                       '$_fmtcStoreId-$_tilesOfflineOnly-$_online',
                     ),
-                    urlTemplate: services.tileCache.rasterUrlTemplate,
+                    urlTemplate: mapType.urlTemplate,
                     userAgentPackageName: 'com.citesa.field_colector',
                     tileProvider: services.tileCache.getTileProvider(
                       _fmtcStoreId,
@@ -336,32 +369,52 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                   ),
                   MarkerLayer(
                     markers: [
-                      if (widget.enableLiveGps && _userPos != null)
+                      if (widget.enableLiveGps &&
+                          settings.showLocationMarker &&
+                          _userPos != null)
                         Marker(
                           point: _userPos!,
                           width: 28,
                           height: 28,
-                          child: Icon(
-                            Icons.navigation,
-                            color: Theme.of(context).colorScheme.tertiary,
-                            size: 28,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.greenParasol.withValues(
+                                alpha: 0.2,
+                              ),
+                              border: Border.all(
+                                color: AppColors.greenParasol,
+                                width: 2.5,
+                              ),
+                            ),
+                            child: Center(
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.grassShadow,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       for (final pin in widget.recordPins)
-                        Marker(
-                          point: pin.toLatLng(),
-                          width: 32,
-                          height: 32,
-                          child: Icon(
-                            Icons.place,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 32,
+                        if (pin.toLatLng() case final pt?)
+                          Marker(
+                            point: pt,
+                            width: 32,
+                            height: 32,
+                            child: Icon(
+                              Icons.place,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 32,
+                            ),
                           ),
-                        ),
                     ],
                   ),
                   SimpleAttributionWidget(
-                    source: const Text('OpenStreetMap'),
+                    source: Text(mapType.attribution),
                     onTap: () {},
                   ),
                 ],

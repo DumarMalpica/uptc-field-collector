@@ -1,3 +1,4 @@
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Punto en el mapa asociado a un registro de campo (misma coordenada exacta).
@@ -16,5 +17,5 @@ class MapRecordPin {
   final double longitude;
   final String? label;
 
-  LatLng toLatLng() => LatLng(latitude, longitude);
+  LatLng? toLatLng() => tryLatLng(latitude, longitude);
 }

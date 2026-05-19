@@ -6,6 +6,7 @@ import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_lay
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
 import 'package:field_colector/features/profile/widgets/profile_section.dart';
+import 'package:field_colector/features/settings/screens/settings_section.dart';
 import 'package:field_colector/features/map/screens/map_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -197,8 +198,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         return FieldRegistrationPanel(key: _fieldRegistrationPanelKey);
       case SidebarSection.profile:
         return const ProfileSection();
-      case SidebarSection.home:
       case SidebarSection.settings:
+        return const SettingsSection();
+      case SidebarSection.home:
         return Center(
           child: Text(
             _activeSection.label,

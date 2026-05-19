@@ -1,7 +1,7 @@
 import 'package:field_colector/domain/ports/maps/map_tile_cache.dart';
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
-import 'package:latlong2/latlong.dart';
 
 /// Adaptador FMTC: descarga circular OSM y sirve teselas vía [FMTCTileProvider].
 class FmtcMapTileCache implements MapTileCache {
@@ -28,6 +28,12 @@ class FmtcMapTileCache implements MapTileCache {
     required int minZoom,
     required int maxZoom,
   }) async {
+    final center = tryLatLng(lat, lon);
+    if (center == null) {
+      throw ArgumentError('Coordenadas inválidas para descarga de teselas '
+          '(lat: $lat, lon: $lon)');
+    }
+
     final store = FMTCStore(areaId);
     if (!await store.manage.ready) {
       await store.manage.create();
@@ -37,7 +43,7 @@ class FmtcMapTileCache implements MapTileCache {
       stores: {areaId: BrowseStoreStrategy.readUpdateCreate},
     );
 
-    final region = CircleRegion(LatLng(lat, lon), radius).toDownloadable(
+    final region = CircleRegion(center, radius).toDownloadable(
       minZoom: minZoom,
       maxZoom: maxZoom,
       options: TileLayer(
@@ -68,5 +74,14 @@ class FmtcMapTileCache implements MapTileCache {
           ? BrowseLoadingStrategy.cacheOnly
           : BrowseLoadingStrategy.cacheFirst,
     );
+  }
+
+  @override
+  Future<void> clearCachedTiles(Iterable<String> storeIds) async {
+    for (final areaId in storeIds) {
+      final store = FMTCStore(areaId);
+      if (!await store.manage.ready) continue;
+      await store.manage.reset();
+    }
   }
 }

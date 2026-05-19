@@ -1,4 +1,5 @@
 import 'package:field_colector/domain/entities/offline_area.dart';
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:latlong2/latlong.dart';
 
 bool completedAreaContainsCoordinate(
@@ -7,12 +8,11 @@ bool completedAreaContainsCoordinate(
   double lon,
 ) {
   if (area.status != AreaDownloadStatus.completed) return false;
+  final center = tryLatLng(area.centerLat, area.centerLon);
+  final point = tryLatLng(lat, lon);
+  if (center == null || point == null) return false;
   const dist = Distance();
-  final meters = dist.as(
-    LengthUnit.Meter,
-    LatLng(area.centerLat, area.centerLon),
-    LatLng(lat, lon),
-  );
+  final meters = dist.as(LengthUnit.Meter, center, point);
   return meters <= area.radiusInKilometers * 1000;
 }
 

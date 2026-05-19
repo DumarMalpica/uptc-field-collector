@@ -1,6 +1,10 @@
 import 'package:field_colector/adapters/real/firebase_auth_adapter.dart';
 import 'package:field_colector/adapters/real/isar_user_adapter.dart';
+import 'package:field_colector/core/database/app_settings_store.dart';
 import 'package:field_colector/core/database/form_draft_service.dart';
+import 'package:field_colector/adapters/geolocator_provider.dart';
+import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/features/settings/providers/settings_provider.dart';
 import 'package:field_colector/core/database/isar_service.dart';
 import 'package:field_colector/core/services/session_validation_service.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
@@ -93,6 +97,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FieldSessionProvider()),
         ChangeNotifierProvider(create: (_) => FormDraftService()),
         Provider<MapServices>.value(value: mapServices),
+        ChangeNotifierProvider(
+          create: (context) => SettingsProvider(
+            store: AppSettingsStore(),
+            mapServices: context.read<MapServices>(),
+            formDrafts: context.read<FormDraftService>(),
+          ),
+        ),
+        Provider<LocatorProvider>(
+          create: (context) =>
+              GeolocatorProvider(context.read<SettingsProvider>()),
+        ),
 
         Provider<BirdRecordRemotePort>(create: (_) => FirebaseBirdRecordAdapter(FirebaseFirestore.instance)),
         Provider<OutingRemotePort>(create: (_) => FirebaseOutingAdapter(FirebaseFirestore.instance)),

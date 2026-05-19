@@ -1,3 +1,4 @@
+import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -59,12 +60,14 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   void initState() {
     super.initState();
     if (widget.initialLocation != null) {
-      _selectedPoint = LatLng(
+      _selectedPoint = tryLatLng(
         widget.initialLocation!.latitude,
         widget.initialLocation!.longitude,
       );
-      _altitudeController.text =
-          widget.initialLocation!.altitude.toStringAsFixed(0);
+      if (_selectedPoint != null) {
+        _altitudeController.text =
+            widget.initialLocation!.altitude.toStringAsFixed(0);
+      }
     }
   }
 
@@ -95,6 +98,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   }
 
   void _onMapTap(TapPosition tapPos, LatLng point) {
+    if (!isValidLatLng(point.latitude, point.longitude)) return;
     setState(() {
       _selectedPoint = point;
       _searchError = null;
@@ -118,7 +122,12 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         return;
       }
       final loc = locations.first;
-      final point = LatLng(loc.latitude, loc.longitude);
+      final point = tryLatLng(loc.latitude, loc.longitude);
+      if (point == null) {
+        setState(() =>
+            _searchError = 'Coordenadas inválidas para "$query"');
+        return;
+      }
 
       setState(() {
         _selectedPoint = point;
