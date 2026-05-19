@@ -4,6 +4,7 @@ import 'package:field_colector/core/database/form_draft_service.dart';
 import 'package:field_colector/core/database/isar_service.dart';
 import 'package:field_colector/core/services/session_validation_service.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/profile/providers/profile_provider.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/home/screens/home.dart';
 import 'package:field_colector/features/map/map_services.dart';
@@ -99,6 +100,12 @@ class MyApp extends StatelessWidget {
         Provider<SoilRecordRemotePort>(create: (_) => FirebaseSoilRecordAdapter(FirebaseFirestore.instance)),
         Provider<SpeciesRemotePort>(create: (_) => FirebaseSpeciesAdapter(FirebaseFirestore.instance)),
         Provider<UserRemotePort>(create: (_) => FirebaseUserAdapter(FirebaseFirestore.instance)),
+        ChangeNotifierProvider<ProfileProvider>(
+          create: (context) => ProfileProvider(
+            auth: context.read<Authprovider>(),
+            userRemote: context.read<UserRemotePort>(),
+          ),
+        ),
         Provider<VegetationRecordRemotePort>(create: (_) => FirebaseVegetationRecordAdapter(FirebaseFirestore.instance)),
         Provider<WaterRecordRemotePort>(create: (_) => FirebaseWaterRecordAdapter(FirebaseFirestore.instance)),
         Provider<ExportService>(
