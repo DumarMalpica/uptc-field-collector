@@ -12,4 +12,7 @@ class Coordinate {
     required this.gpsAccuracy,
     required this.manuallyEdited,
   });
+
+  bool get isFinite =>
+      latitude.isFinite && longitude.isFinite && altitude.isFinite;
 }

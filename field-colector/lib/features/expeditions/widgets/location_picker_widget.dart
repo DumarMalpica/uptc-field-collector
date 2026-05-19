@@ -58,7 +58,9 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialLocation != null) {
+    if (widget.initialLocation != null &&
+        widget.initialLocation!.latitude.isFinite &&
+        widget.initialLocation!.longitude.isFinite) {
       _selectedPoint = LatLng(
         widget.initialLocation!.latitude,
         widget.initialLocation!.longitude,

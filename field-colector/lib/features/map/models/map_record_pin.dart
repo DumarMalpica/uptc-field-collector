@@ -16,5 +16,8 @@ class MapRecordPin {
   final double longitude;
   final String? label;
 
-  LatLng toLatLng() => LatLng(latitude, longitude);
+  LatLng? toLatLng() {
+    if (!latitude.isFinite || !longitude.isFinite) return null;
+    return LatLng(latitude, longitude);
+  }
 }
