@@ -4,8 +4,9 @@
 /// servicio activo y lectura de coordenadas. El resultado se guarda como
 /// mapa en [FormProvider] y se notifica a [FormField] para validación de
 /// obligatoriedad dentro del [Form] padre.
-import 'package:field_colector/adapters/geolocator_provider.dart';
+import 'package:field_colector/domain/ports/locator_provider.dart';
 import 'package:field_colector/features/forms/models/form_schema.dart';
+import 'package:provider/provider.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +28,6 @@ class FormGpsCaptureField extends StatefulWidget {
 class _FormGpsCaptureFieldState extends State<FormGpsCaptureField> {
   bool _busy = false;
   String? _error;
-  final GeolocatorProvider _locator = GeolocatorProvider();
   final GlobalKey<FormFieldState<Map<String, dynamic>?>> _formFieldKey =
       GlobalKey<FormFieldState<Map<String, dynamic>?>>();
 
@@ -37,9 +37,10 @@ class _FormGpsCaptureFieldState extends State<FormGpsCaptureField> {
       _error = null;
     });
     try {
-      final ok = await _locator.checkLocationPermissions()
+      final locator = context.read<LocatorProvider>();
+      final ok = await locator.checkLocationPermissions()
           ? true
-          : await _locator.requestLocationPermissions();
+          : await locator.requestLocationPermissions();
       if (!ok) {
         setState(() {
           _busy = false;
@@ -47,14 +48,21 @@ class _FormGpsCaptureFieldState extends State<FormGpsCaptureField> {
         });
         return;
       }
-      if (!await _locator.isLocationEnabled()) {
+      if (!await locator.isLocationEnabled()) {
         setState(() {
           _busy = false;
           _error = 'Ubicación desactivada en el dispositivo';
         });
         return;
       }
-      final c = await _locator.getCurrentLocation();
+      final c = await locator.getCurrentLocation();
+      if (!c.isFinite) {
+        setState(() {
+          _busy = false;
+          _error = 'GPS devolvió coordenadas inválidas';
+        });
+        return;
+      }
       final map = <String, dynamic>{
         'latitude': c.latitude,
         'longitude': c.longitude,
