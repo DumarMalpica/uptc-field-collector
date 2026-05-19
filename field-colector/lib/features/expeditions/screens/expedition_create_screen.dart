@@ -73,7 +73,6 @@ class _ExpeditionCreateScreenState extends State<ExpeditionCreateScreen> {
       initialDate: initial,
       firstDate: first,
       lastDate: now.add(const Duration(days: 365 * 2)),
-      locale: const Locale('es'),
     );
 
     if (picked != null && mounted) {
