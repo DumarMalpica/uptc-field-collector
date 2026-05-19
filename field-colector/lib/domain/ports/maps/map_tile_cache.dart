@@ -19,4 +19,7 @@ abstract class MapTileCache {
 
   /// Si [offlineOnly], no intenta red (solo teselas ya en el store).
   TileProvider getTileProvider(String areaId, {bool offlineOnly = false});
+
+  /// Borra teselas en caché de los almacenes indicados (p. ej. tras confirmación del usuario).
+  Future<void> clearCachedTiles(Iterable<String> storeIds);
 }

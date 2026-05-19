@@ -69,4 +69,13 @@ class FmtcMapTileCache implements MapTileCache {
           : BrowseLoadingStrategy.cacheFirst,
     );
   }
+
+  @override
+  Future<void> clearCachedTiles(Iterable<String> storeIds) async {
+    for (final areaId in storeIds) {
+      final store = FMTCStore(areaId);
+      if (!await store.manage.ready) continue;
+      await store.manage.reset();
+    }
+  }
 }
