@@ -3,6 +3,11 @@ import 'package:path_provider/path_provider.dart';
 import '../../adapters/real/user_model.dart';
 import '../../adapters/real/outing_model.dart';
 import '../../adapters/real/photo_model.dart';
+import '../../adapters/real/bird_record_model.dart';
+import '../../adapters/real/rock_record_model.dart';
+import '../../adapters/real/soil_record_model.dart';
+import '../../adapters/real/vegetation_record_model.dart';
+import '../../adapters/real/water_record_model.dart';
 
 /// Servicio singleton que gestiona la instancia de Isar.
 ///
@@ -19,7 +24,16 @@ class IsarService {
     final dir = await getApplicationDocumentsDirectory();
 
     _instance = await Isar.open(
-      [UserModelSchema, OutingModelSchema, PhotoModelSchema],
+      [
+        UserModelSchema,
+        OutingModelSchema,
+        PhotoModelSchema,
+        BirdRecordModelSchema,
+        RockRecordModelSchema,
+        SoilRecordModelSchema,
+        VegetationRecordModelSchema,
+        WaterRecordModelSchema,
+      ],
       directory: dir.path,
       name: 'citesa_field_collector',
     );
