@@ -93,8 +93,10 @@ class IsarVegetationRecordAdapter implements VegetationRecordLocalPort {
   Future<List<VegetationRecord>> getPendingSyncRecords() async {
     final isar = await IsarService.getInstance();
     final query = isar.vegetationRecordModels.buildQuery<VegetationRecordModel>(
-      filter:
-          FilterCondition.equalTo(property: 'syncStatus', value: 'pending'),
+      filter: FilterGroup.or([
+        FilterCondition.equalTo(property: 'syncStatus', value: 'pending'),
+        FilterCondition.equalTo(property: 'syncStatus', value: 'error'),
+      ]),
     );
     final results = await query.findAll();
     return results.map((m) => m.toDomain()).toList();

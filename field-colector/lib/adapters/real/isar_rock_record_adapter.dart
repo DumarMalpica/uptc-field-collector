@@ -92,8 +92,10 @@ class IsarRockRecordAdapter implements RockRecordLocalPort {
   Future<List<RockRecord>> getPendingSyncRecords() async {
     final isar = await IsarService.getInstance();
     final query = isar.rockRecordModels.buildQuery<RockRecordModel>(
-      filter:
-          FilterCondition.equalTo(property: 'syncStatus', value: 'pending'),
+      filter: FilterGroup.or([
+        FilterCondition.equalTo(property: 'syncStatus', value: 'pending'),
+        FilterCondition.equalTo(property: 'syncStatus', value: 'error'),
+      ]),
     );
     final results = await query.findAll();
     return results.map((m) => m.toDomain()).toList();
