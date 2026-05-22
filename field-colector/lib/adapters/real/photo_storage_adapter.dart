@@ -1,8 +1,11 @@
 // ignore_for_file: experimental_member_use
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:http/http.dart' as http;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../domain/entities/photo.dart';
@@ -11,10 +14,12 @@ import '../../core/database/isar_service.dart';
 import 'photo_model.dart';
 
 class PhotoStorageAdapter implements PhotoLocalPort {
-  final FirebaseStorage _storage;
+  final FirebaseStorage? _storage;
+  final http.Client _httpClient;
 
-  PhotoStorageAdapter({FirebaseStorage? storage})
-      : _storage = storage ?? FirebaseStorage.instance;
+  PhotoStorageAdapter({FirebaseStorage? storage, http.Client? httpClient})
+      : _storage = storage,
+        _httpClient = httpClient ?? http.Client();
 
   // ── PhotoLocalPort ────────────────────────────────────────────────────────
 
@@ -127,7 +132,7 @@ class PhotoStorageAdapter implements PhotoLocalPort {
     });
   }
 
-  // ── Firebase Storage upload ───────────────────────────────────────────────
+  // ── Cloudinary Storage upload ──────────────────────────────────────────────
   // No forma parte de PhotoLocalPort — lo llama el servicio de sincronización.
 
   Future<void> uploadToFirebase(String photoId, String outingPrefix) async {
@@ -143,14 +148,54 @@ class PhotoStorageAdapter implements PhotoLocalPort {
     if (model.syncStatus == 'synced') return;
 
     try {
-      final ref = _storage
-          .ref('$outingPrefix/${model.recordId}/${model.filename}');
-      await ref.putFile(File(model.localPath));
-      final url = await ref.getDownloadURL();
+      final file = File(model.localPath);
+      if (!await file.exists()) {
+        model.syncStatus = 'error';
+      } else {
+        final url = Uri.parse('https://api.cloudinary.com/v1_1/dvcbrr7h7/image/upload');
+        final request = http.MultipartRequest('POST', url)
+          ..fields['upload_preset'] = 'proyectoApp'
+          ..files.add(await http.MultipartFile.fromPath('file', model.localPath));
 
-      model
-        ..storageUrl = url
-        ..syncStatus = 'synced';
+        final streamedResponse = await _httpClient.send(request);
+        final response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+          final secureUrl = responseData['secure_url'] as String;
+
+          model
+            ..storageUrl = secureUrl
+            ..syncStatus = 'synced';
+
+          final collection = _collectionFromRecordType(model.recordType);
+          if (collection != null) {
+            final docRef = FirebaseFirestore.instance.collection(collection).doc(model.recordId);
+            final doc = await docRef.get();
+            if (doc.exists) {
+              final data = doc.data();
+              if (data != null) {
+                final photosList = List<dynamic>.from(data['photos'] ?? []);
+                var updated = false;
+                for (var i = 0; i < photosList.length; i++) {
+                  final p = Map<String, dynamic>.from(photosList[i]);
+                  if (p['id'] == photoId) {
+                    p['storageUrl'] = secureUrl;
+                    p['syncStatus'] = 'synced';
+                    photosList[i] = p;
+                    updated = true;
+                  }
+                }
+                if (updated) {
+                  await docRef.update({'photos': photosList});
+                }
+              }
+            }
+          }
+        } else {
+          model.syncStatus = 'error';
+        }
+      }
     } catch (_) {
       model.syncStatus = 'error';
     }
@@ -160,14 +205,31 @@ class PhotoStorageAdapter implements PhotoLocalPort {
     });
   }
 
+  String? _collectionFromRecordType(String recordType) {
+    switch (recordType.toLowerCase()) {
+      case 'bird':
+        return 'bird_records';
+      case 'rock':
+        return 'rock_records';
+      case 'soil':
+        return 'soil_records';
+      case 'water':
+        return 'water_records';
+      case 'vegetation':
+        return 'vegetation_records';
+      default:
+        return null;
+    }
+  }
+
   // ── Helpers privados ──────────────────────────────────────────────────────
 
   Future<Uint8List> _compress(Uint8List bytes) async {
     final result = await FlutterImageCompress.compressWithList(
       bytes,
-      minWidth: 1280,
-      minHeight: 1280,
-      quality: 85,
+      minWidth: 1920,
+      minHeight: 1920,
+      quality: 95,
       format: CompressFormat.jpeg,
     );
     return result;
