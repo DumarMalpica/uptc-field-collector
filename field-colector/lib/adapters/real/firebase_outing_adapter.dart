@@ -23,8 +23,8 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       'endDate': item.endDate.toIso8601String(),
       'createdById': item.createdById,
       'participantIds': item.participantIds,
+      'participants': item.participants.map((u) => u.toMap()).toList(),
       'status': item.status,
-      'syncStatus': item.syncStatus,
       'pendingUsers': item.pendingUsers.map((u) => u.toMap()).toList(),
     });
   }
@@ -86,6 +86,13 @@ class FirebaseOutingAdapter implements OutingRemotePort {
     );
   }
 
+  List<OutingMember> _parseMembers(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .map((e) => OutingMember.fromMap(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Outing _mapSnapshotToOuting(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Outing(
@@ -102,11 +109,10 @@ class FirebaseOutingAdapter implements OutingRemotePort {
       endDate: data['endDate'] != null ? DateTime.parse(data['endDate']) : DateTime.now(),
       createdById: data['createdById'] ?? '',
       participantIds: List<String>.from(data['participantIds'] ?? []),
+      participants: _parseMembers(data['participants']),
       status: data['status'] ?? 'active',
-      syncStatus: data['syncStatus'] ?? 'synced',
-      pendingUsers: (data['pendingUsers'] as List<dynamic>?)
-          ?.map((e) => PendingUser.fromMap(e as Map<String, dynamic>))
-          .toList() ?? [],
+      syncStatus: 'synced',
+      pendingUsers: _parseMembers(data['pendingUsers']),
     );
   }
 

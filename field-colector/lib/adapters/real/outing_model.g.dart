@@ -62,39 +62,45 @@ const OutingModelSchema = CollectionSchema(
       name: r'participantIds',
       type: IsarType.stringList,
     ),
-    r'pendingUsers': PropertySchema(
+    r'participants': PropertySchema(
       id: 9,
+      name: r'participants',
+      type: IsarType.objectList,
+      target: r'OutingMemberModel',
+    ),
+    r'pendingUsers': PropertySchema(
+      id: 10,
       name: r'pendingUsers',
       type: IsarType.objectList,
-      target: r'PendingUserModel',
+      target: r'OutingMemberModel',
     ),
     r'prefix': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'prefix',
       type: IsarType.string,
     ),
     r'reason': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'reason',
       type: IsarType.string,
     ),
     r'startDate': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'status',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'syncStatus',
       type: IsarType.string,
     ),
     r'zone': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'zone',
       type: IsarType.string,
     )
@@ -120,7 +126,7 @@ const OutingModelSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {r'PendingUserModel': PendingUserModelSchema},
+  embeddedSchemas: {r'OutingMemberModel': OutingMemberModelSchema},
   getId: _outingModelGetId,
   getLinks: _outingModelGetLinks,
   attach: _outingModelAttach,
@@ -144,13 +150,22 @@ int _outingModelEstimateSize(
       bytesCount += value.length * 3;
     }
   }
+  bytesCount += 3 + object.participants.length * 3;
+  {
+    final offsets = allOffsets[OutingMemberModel]!;
+    for (var i = 0; i < object.participants.length; i++) {
+      final value = object.participants[i];
+      bytesCount +=
+          OutingMemberModelSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
   bytesCount += 3 + object.pendingUsers.length * 3;
   {
-    final offsets = allOffsets[PendingUserModel]!;
+    final offsets = allOffsets[OutingMemberModel]!;
     for (var i = 0; i < object.pendingUsers.length; i++) {
       final value = object.pendingUsers[i];
       bytesCount +=
-          PendingUserModelSchema.estimateSize(value, offsets, allOffsets);
+          OutingMemberModelSchema.estimateSize(value, offsets, allOffsets);
     }
   }
   bytesCount += 3 + object.prefix.length * 3;
@@ -176,18 +191,24 @@ void _outingModelSerialize(
   writer.writeString(offsets[6], object.name);
   writer.writeString(offsets[7], object.outingId);
   writer.writeStringList(offsets[8], object.participantIds);
-  writer.writeObjectList<PendingUserModel>(
+  writer.writeObjectList<OutingMemberModel>(
     offsets[9],
     allOffsets,
-    PendingUserModelSchema.serialize,
+    OutingMemberModelSchema.serialize,
+    object.participants,
+  );
+  writer.writeObjectList<OutingMemberModel>(
+    offsets[10],
+    allOffsets,
+    OutingMemberModelSchema.serialize,
     object.pendingUsers,
   );
-  writer.writeString(offsets[10], object.prefix);
-  writer.writeString(offsets[11], object.reason);
-  writer.writeDateTime(offsets[12], object.startDate);
-  writer.writeString(offsets[13], object.status);
-  writer.writeString(offsets[14], object.syncStatus);
-  writer.writeString(offsets[15], object.zone);
+  writer.writeString(offsets[11], object.prefix);
+  writer.writeString(offsets[12], object.reason);
+  writer.writeDateTime(offsets[13], object.startDate);
+  writer.writeString(offsets[14], object.status);
+  writer.writeString(offsets[15], object.syncStatus);
+  writer.writeString(offsets[16], object.zone);
 }
 
 OutingModel _outingModelDeserialize(
@@ -207,19 +228,26 @@ OutingModel _outingModelDeserialize(
   object.name = reader.readString(offsets[6]);
   object.outingId = reader.readString(offsets[7]);
   object.participantIds = reader.readStringList(offsets[8]) ?? [];
-  object.pendingUsers = reader.readObjectList<PendingUserModel>(
+  object.participants = reader.readObjectList<OutingMemberModel>(
         offsets[9],
-        PendingUserModelSchema.deserialize,
+        OutingMemberModelSchema.deserialize,
         allOffsets,
-        PendingUserModel(),
+        OutingMemberModel(),
       ) ??
       [];
-  object.prefix = reader.readString(offsets[10]);
-  object.reason = reader.readString(offsets[11]);
-  object.startDate = reader.readDateTime(offsets[12]);
-  object.status = reader.readString(offsets[13]);
-  object.syncStatus = reader.readString(offsets[14]);
-  object.zone = reader.readString(offsets[15]);
+  object.pendingUsers = reader.readObjectList<OutingMemberModel>(
+        offsets[10],
+        OutingMemberModelSchema.deserialize,
+        allOffsets,
+        OutingMemberModel(),
+      ) ??
+      [];
+  object.prefix = reader.readString(offsets[11]);
+  object.reason = reader.readString(offsets[12]);
+  object.startDate = reader.readDateTime(offsets[13]);
+  object.status = reader.readString(offsets[14]);
+  object.syncStatus = reader.readString(offsets[15]);
+  object.zone = reader.readString(offsets[16]);
   return object;
 }
 
@@ -249,24 +277,32 @@ P _outingModelDeserializeProp<P>(
     case 8:
       return (reader.readStringList(offset) ?? []) as P;
     case 9:
-      return (reader.readObjectList<PendingUserModel>(
+      return (reader.readObjectList<OutingMemberModel>(
             offset,
-            PendingUserModelSchema.deserialize,
+            OutingMemberModelSchema.deserialize,
             allOffsets,
-            PendingUserModel(),
+            OutingMemberModel(),
           ) ??
           []) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readObjectList<OutingMemberModel>(
+            offset,
+            OutingMemberModelSchema.deserialize,
+            allOffsets,
+            OutingMemberModel(),
+          ) ??
+          []) as P;
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readDateTime(offset)) as P;
-    case 13:
       return (reader.readString(offset)) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
     case 14:
       return (reader.readString(offset)) as P;
     case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1531,6 +1567,95 @@ extension OutingModelQueryFilter
   }
 
   QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      participantsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'participants',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      participantsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'participants',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      participantsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'participants',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      participantsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'participants',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      participantsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'participants',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      participantsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'participants',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
       pendingUsersLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
@@ -2348,7 +2473,14 @@ extension OutingModelQueryFilter
 extension OutingModelQueryObject
     on QueryBuilder<OutingModel, OutingModel, QFilterCondition> {
   QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
-      pendingUsersElement(FilterQuery<PendingUserModel> q) {
+      participantsElement(FilterQuery<OutingMemberModel> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'participants');
+    });
+  }
+
+  QueryBuilder<OutingModel, OutingModel, QAfterFilterCondition>
+      pendingUsersElement(FilterQuery<OutingMemberModel> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'pendingUsers');
     });
@@ -2877,7 +3009,14 @@ extension OutingModelQueryProperty
     });
   }
 
-  QueryBuilder<OutingModel, List<PendingUserModel>, QQueryOperations>
+  QueryBuilder<OutingModel, List<OutingMemberModel>, QQueryOperations>
+      participantsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'participants');
+    });
+  }
+
+  QueryBuilder<OutingModel, List<OutingMemberModel>, QQueryOperations>
       pendingUsersProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'pendingUsers');
@@ -2928,9 +3067,9 @@ extension OutingModelQueryProperty
 // coverage:ignore-file
 // ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
-const PendingUserModelSchema = Schema(
-  name: r'PendingUserModel',
-  id: 3535220426747290331,
+const OutingMemberModelSchema = Schema(
+  name: r'OutingMemberModel',
+  id: 7923995985659700880,
   properties: {
     r'email': PropertySchema(
       id: 0,
@@ -2948,14 +3087,14 @@ const PendingUserModelSchema = Schema(
       type: IsarType.string,
     )
   },
-  estimateSize: _pendingUserModelEstimateSize,
-  serialize: _pendingUserModelSerialize,
-  deserialize: _pendingUserModelDeserialize,
-  deserializeProp: _pendingUserModelDeserializeProp,
+  estimateSize: _outingMemberModelEstimateSize,
+  serialize: _outingMemberModelSerialize,
+  deserialize: _outingMemberModelDeserialize,
+  deserializeProp: _outingMemberModelDeserializeProp,
 );
 
-int _pendingUserModelEstimateSize(
-  PendingUserModel object,
+int _outingMemberModelEstimateSize(
+  OutingMemberModel object,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
@@ -2966,8 +3105,8 @@ int _pendingUserModelEstimateSize(
   return bytesCount;
 }
 
-void _pendingUserModelSerialize(
-  PendingUserModel object,
+void _outingMemberModelSerialize(
+  OutingMemberModel object,
   IsarWriter writer,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
@@ -2977,20 +3116,20 @@ void _pendingUserModelSerialize(
   writer.writeString(offsets[2], object.name);
 }
 
-PendingUserModel _pendingUserModelDeserialize(
+OutingMemberModel _outingMemberModelDeserialize(
   Id id,
   IsarReader reader,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = PendingUserModel();
+  final object = OutingMemberModel();
   object.email = reader.readString(offsets[0]);
   object.id = reader.readString(offsets[1]);
   object.name = reader.readString(offsets[2]);
   return object;
 }
 
-P _pendingUserModelDeserializeProp<P>(
+P _outingMemberModelDeserializeProp<P>(
   IsarReader reader,
   int propertyId,
   int offset,
@@ -3008,9 +3147,9 @@ P _pendingUserModelDeserializeProp<P>(
   }
 }
 
-extension PendingUserModelQueryFilter
-    on QueryBuilder<PendingUserModel, PendingUserModel, QFilterCondition> {
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+extension OutingMemberModelQueryFilter
+    on QueryBuilder<OutingMemberModel, OutingMemberModel, QFilterCondition> {
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -3024,7 +3163,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailGreaterThan(
     String value, {
     bool include = false,
@@ -3040,7 +3179,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailLessThan(
     String value, {
     bool include = false,
@@ -3056,7 +3195,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailBetween(
     String lower,
     String upper, {
@@ -3076,7 +3215,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailStartsWith(
     String value, {
     bool caseSensitive = true,
@@ -3090,7 +3229,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailEndsWith(
     String value, {
     bool caseSensitive = true,
@@ -3104,7 +3243,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
@@ -3115,7 +3254,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
@@ -3126,7 +3265,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -3136,7 +3275,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       emailIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
@@ -3146,7 +3285,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -3160,7 +3299,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idGreaterThan(
     String value, {
     bool include = false,
@@ -3176,7 +3315,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idLessThan(
     String value, {
     bool include = false,
@@ -3192,7 +3331,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idBetween(
     String lower,
     String upper, {
@@ -3212,7 +3351,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idStartsWith(
     String value, {
     bool caseSensitive = true,
@@ -3226,7 +3365,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idEndsWith(
     String value, {
     bool caseSensitive = true,
@@ -3240,7 +3379,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
@@ -3251,7 +3390,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
@@ -3262,7 +3401,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -3272,7 +3411,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       idIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
@@ -3282,7 +3421,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -3296,7 +3435,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameGreaterThan(
     String value, {
     bool include = false,
@@ -3312,7 +3451,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameLessThan(
     String value, {
     bool include = false,
@@ -3328,7 +3467,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameBetween(
     String lower,
     String upper, {
@@ -3348,7 +3487,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameStartsWith(
     String value, {
     bool caseSensitive = true,
@@ -3362,7 +3501,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameEndsWith(
     String value, {
     bool caseSensitive = true,
@@ -3376,7 +3515,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
@@ -3387,7 +3526,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
@@ -3398,7 +3537,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -3408,7 +3547,7 @@ extension PendingUserModelQueryFilter
     });
   }
 
-  QueryBuilder<PendingUserModel, PendingUserModel, QAfterFilterCondition>
+  QueryBuilder<OutingMemberModel, OutingMemberModel, QAfterFilterCondition>
       nameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
@@ -3419,5 +3558,5 @@ extension PendingUserModelQueryFilter
   }
 }
 
-extension PendingUserModelQueryObject
-    on QueryBuilder<PendingUserModel, PendingUserModel, QFilterCondition> {}
+extension OutingMemberModelQueryObject
+    on QueryBuilder<OutingMemberModel, OutingMemberModel, QFilterCondition> {}

@@ -22,6 +22,17 @@ void main() {
       verify(() => mockPort.saveOuting(outing)).called(1);
     });
 
+    test('getOutingById retorna participantes con nombre y email', () async {
+      final outing = _outingActiva();
+      when(() => mockPort.getOutingById(outing.id))
+          .thenAnswer((_) async => outing);
+
+      final result = await mockPort.getOutingById(outing.id);
+      expect(result!.participants, hasLength(2));
+      expect(result.participants.first.name, 'Director Test');
+      expect(result.participants.last.email, 'colega@citesa.co');
+    });
+
     test('getOutingById retorna expedición existente', () async {
       final outing = _outingActiva();
       when(() => mockPort.getOutingById(outing.id))
@@ -324,6 +335,18 @@ Outing _outingActiva() => Outing(
       endDate: DateTime(2025, 6, 17),
       createdById: 'uid-investigador-001',
       participantIds: ['uid-investigador-001', 'uid-investigador-002'],
+      participants: [
+        const OutingMember(
+          id: 'uid-investigador-001',
+          name: 'Director Test',
+          email: 'dir@citesa.co',
+        ),
+        const OutingMember(
+          id: 'uid-investigador-002',
+          name: 'Colega Test',
+          email: 'colega@citesa.co',
+        ),
+      ],
       status: 'active',
       syncStatus: 'synced',
     );
