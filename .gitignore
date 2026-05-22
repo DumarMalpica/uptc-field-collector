@@ -68,5 +68,10 @@ app.*.map.json
 *.env
 .env.*
 
+# Firebase — local per developer (team templates: *.example.*)
 field-colector/android/app/google-services.json
+field-colector/ios/Runner/GoogleService-Info.plist
+field-colector/lib/firebase_options.dart
+field-colector/firebase.json
+
 lib/features/auth/providers/auth_provider_local.dart
