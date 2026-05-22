@@ -4,6 +4,7 @@ import '../../domain/ports/vegetation_record_remote_port.dart';
 import '../../domain/entities/photo.dart';
 import '../../domain/entities/coordinate.dart';
 import '../../domain/entities/plot.dart';
+import 'record_photo_sync_helper.dart';
 
 class FirebaseVegetationRecordAdapter implements VegetationRecordRemotePort {
   final FirebaseFirestore _firestore;
@@ -54,6 +55,16 @@ class FirebaseVegetationRecordAdapter implements VegetationRecordRemotePort {
         'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType,
       }).toList(),
     });
+
+    if (item.photos.isNotEmpty) {
+      await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+        recordId: item.id,
+        recordType: 'vegetation',
+        outingId: item.outingId,
+        photos: item.photos,
+        firestore: _firestore,
+      );
+    }
   }
 
   @override
