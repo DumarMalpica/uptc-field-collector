@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:field_colector/domain/entities/app_settings.dart';
+import 'package:field_colector/domain/ports/sync_port.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/profile/providers/profile_provider.dart';
 import 'package:field_colector/features/settings/providers/settings_provider.dart';
@@ -22,13 +23,48 @@ class SettingsSection extends StatefulWidget {
 }
 
 class _SettingsSectionState extends State<SettingsSection> {
+  bool _isSyncing = false;
+  bool _hasPendingSync = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(context.read<SettingsProvider>().refreshStorageSummary());
+      unawaited(_refreshPendingSyncStatus());
     });
+  }
+
+  Future<void> _refreshPendingSyncStatus() async {
+    final pending = await context.read<SyncPort>().hasPendingSync();
+    if (!mounted) return;
+    setState(() => _hasPendingSync = pending);
+  }
+
+  Future<void> _syncNow() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      final result = await context.read<SyncPort>().syncPendingData();
+      if (!mounted) return;
+      final message = result.failed == 0
+          ? '${result.synced} elemento(s) sincronizado(s)'
+          : '${result.synced} sincronizados, ${result.failed} fallaron';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al sincronizar: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+        unawaited(_refreshPendingSyncStatus());
+      }
+    }
   }
 
   Future<void> _pickFromList<T>({
@@ -274,6 +310,30 @@ class _SettingsSectionState extends State<SettingsSection> {
                       current: settings.mapType,
                       onSelected: settings.setMapType,
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SettingsGroup(
+                title: 'Datos',
+                icon: PhosphorIconsRegular.cloudArrowUp,
+                children: [
+                  SettingsTile.action(
+                    title: 'Sincronizar ahora',
+                    subtitle: _isSyncing
+                        ? 'Sincronizando…'
+                        : _hasPendingSync
+                            ? 'Hay datos pendientes de subir'
+                            : 'Todo sincronizado',
+                    enabled: !_isSyncing && !settings.isBusy,
+                    trailing: _isSyncing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
+                    onTap: _syncNow,
                   ),
                 ],
               ),
