@@ -16,6 +16,8 @@ import 'package:field_colector/domain/ports/vegetation_record_local_port.dart';
 import 'package:field_colector/domain/ports/vegetation_record_remote_port.dart';
 import 'package:field_colector/domain/ports/water_record_local_port.dart';
 import 'package:field_colector/domain/ports/water_record_remote_port.dart';
+import 'package:field_colector/domain/ports/social_record_local_port.dart';
+import 'package:field_colector/domain/ports/social_record_remote_port.dart';
 import 'package:field_colector/core/services/sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,6 +50,10 @@ class MockWaterRemotePort extends Mock implements WaterRecordRemotePort {}
 
 class MockPhotoLocalPort extends Mock implements PhotoLocalPort {}
 
+class MockSocialLocalPort extends Mock implements SocialRecordLocalPort {}
+
+class MockSocialRemotePort extends Mock implements SocialRecordRemotePort {}
+
 // ── Port set — agrupa todos los mocks para reducir boilerplate ────────────────
 
 class _Ports {
@@ -64,6 +70,8 @@ class _Ports {
   final waterLocal = MockWaterLocalPort();
   final waterRemote = MockWaterRemotePort();
   final photoLocal = MockPhotoLocalPort();
+  final socialLocal = MockSocialLocalPort();
+  final socialRemote = MockSocialRemotePort();
 
   void stubAllEmpty() {
     when(() => outingLocal.getPendingSyncOutings())
@@ -73,6 +81,7 @@ class _Ports {
     when(() => soilLocal.getPendingSyncRecords()).thenAnswer((_) async => []);
     when(() => vegLocal.getPendingSyncRecords()).thenAnswer((_) async => []);
     when(() => waterLocal.getPendingSyncRecords()).thenAnswer((_) async => []);
+    when(() => socialLocal.getPendingSyncRecords()).thenAnswer((_) async => []);
     when(() => photoLocal.getPendingSyncPhotos()).thenAnswer((_) async => []);
   }
 
@@ -89,6 +98,8 @@ class _Ports {
         vegRemotePort: vegRemote,
         waterLocalPort: waterLocal,
         waterRemotePort: waterRemote,
+        socialLocalPort: socialLocal,
+        socialRemotePort: socialRemote,
         photoLocalPort: photoLocal,
       );
 }
@@ -116,6 +127,82 @@ void main() {
           .thenAnswer((_) async => [_outing()]);
 
       expect(await p.buildService().hasPendingSync(), isTrue);
+    });
+
+    test('hasPendingSync retorna true si hay registros con error', () async {
+      final p = _Ports()..stubAllEmpty();
+      when(() => p.birdLocal.getPendingSyncRecords()).thenAnswer(
+        (_) async => [
+          BirdRecord(
+            id: 'bird-sync-error',
+            outingId: 'outing-sync-001',
+            userId: 'user-001',
+            recordedAt: DateTime(2025, 6, 11),
+            coordinates: _coord(),
+            department: 'Boyacá',
+            municipality: 'El Cocuy',
+            village: 'Güicán',
+            sector: 'Páramo',
+            syncStatus: 'error',
+            season: 'dry',
+            place: 'Bosque',
+            speciesId: 'sp-001',
+            birdType: 'passerine',
+            migratorStatus: 'resident',
+            individualCount: 1,
+            behavior: 'resting',
+            activity: 'visual',
+            habitat: ['bosque'],
+            foragingType: [],
+            observedThreats: [],
+            photos: [],
+          ),
+        ],
+      );
+
+      expect(await p.buildService().hasPendingSync(), isTrue);
+    });
+
+    test('syncPendingData reintenta registros con syncStatus error', () async {
+      final p = _Ports()..stubAllEmpty();
+      final bird = BirdRecord(
+        id: 'bird-sync-error',
+        outingId: 'outing-sync-001',
+        userId: 'user-001',
+        recordedAt: DateTime(2025, 6, 11),
+        coordinates: _coord(),
+        department: 'Boyacá',
+        municipality: 'El Cocuy',
+        village: 'Güicán',
+        sector: 'Páramo',
+        syncStatus: 'error',
+        season: 'dry',
+        place: 'Bosque',
+        speciesId: 'sp-001',
+        birdType: 'passerine',
+        migratorStatus: 'resident',
+        individualCount: 1,
+        behavior: 'resting',
+        activity: 'visual',
+        habitat: ['bosque'],
+        foragingType: [],
+        observedThreats: [],
+        photos: [],
+      );
+
+      when(() => p.birdLocal.getPendingSyncRecords())
+          .thenAnswer((_) async => [bird]);
+      when(() => p.birdRemote.saveBirdRecord(bird))
+          .thenAnswer((_) async {});
+      when(() => p.birdLocal.updateSyncStatus(bird.id, 'synced'))
+          .thenAnswer((_) async {});
+
+      final result = await p.buildService().syncPendingData();
+
+      expect(result.synced, 1);
+      expect(result.failed, 0);
+      verify(() => p.birdRemote.saveBirdRecord(bird)).called(1);
+      verify(() => p.birdLocal.updateSyncStatus(bird.id, 'synced')).called(1);
     });
 
     test('syncPendingData procesa outings antes que registros', () async {

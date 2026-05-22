@@ -12,6 +12,8 @@ import '../../domain/ports/vegetation_record_local_port.dart';
 import '../../domain/ports/vegetation_record_remote_port.dart';
 import '../../domain/ports/water_record_local_port.dart';
 import '../../domain/ports/water_record_remote_port.dart';
+import '../../domain/ports/social_record_local_port.dart';
+import '../../domain/ports/social_record_remote_port.dart';
 import '../../domain/ports/photo_local_port.dart';
 
 class SyncService implements SyncPort {
@@ -27,6 +29,8 @@ class SyncService implements SyncPort {
   final VegetationRecordRemotePort _vegRemotePort;
   final WaterRecordLocalPort _waterLocalPort;
   final WaterRecordRemotePort _waterRemotePort;
+  final SocialRecordLocalPort _socialLocalPort;
+  final SocialRecordRemotePort _socialRemotePort;
   final PhotoLocalPort _photoLocalPort;
 
   final _progressController = StreamController<SyncProgress>.broadcast();
@@ -44,6 +48,8 @@ class SyncService implements SyncPort {
     required VegetationRecordRemotePort vegRemotePort,
     required WaterRecordLocalPort waterLocalPort,
     required WaterRecordRemotePort waterRemotePort,
+    required SocialRecordLocalPort socialLocalPort,
+    required SocialRecordRemotePort socialRemotePort,
     required PhotoLocalPort photoLocalPort,
   })  : _outingLocalPort = outingLocalPort,
         _outingRemotePort = outingRemotePort,
@@ -57,6 +63,8 @@ class SyncService implements SyncPort {
         _vegRemotePort = vegRemotePort,
         _waterLocalPort = waterLocalPort,
         _waterRemotePort = waterRemotePort,
+        _socialLocalPort = socialLocalPort,
+        _socialRemotePort = socialRemotePort,
         _photoLocalPort = photoLocalPort;
 
   @override
@@ -82,6 +90,9 @@ class SyncService implements SyncPort {
     final waters = await _waterLocalPort.getPendingSyncRecords();
     if (waters.isNotEmpty) return true;
 
+    final socials = await _socialLocalPort.getPendingSyncRecords();
+    if (socials.isNotEmpty) return true;
+
     final photos = await _photoLocalPort.getPendingSyncPhotos();
     return photos.isNotEmpty;
   }
@@ -98,6 +109,7 @@ class SyncService implements SyncPort {
     final pendingSoils = await _soilLocalPort.getPendingSyncRecords();
     final pendingVegs = await _vegLocalPort.getPendingSyncRecords();
     final pendingWaters = await _waterLocalPort.getPendingSyncRecords();
+    final pendingSocials = await _socialLocalPort.getPendingSyncRecords();
     final pendingPhotos = await _photoLocalPort.getPendingSyncPhotos();
 
     final total = pendingOutings.length +
@@ -106,6 +118,7 @@ class SyncService implements SyncPort {
         pendingSoils.length +
         pendingVegs.length +
         pendingWaters.length +
+        pendingSocials.length +
         pendingPhotos.length;
 
     int completed = 0;
@@ -202,6 +215,20 @@ class SyncService implements SyncPort {
         await _waterLocalPort.updateSyncStatus(record.id, 'error');
         failed++;
         errors.add('water:${record.id}: $e');
+      }
+      completed++;
+    }
+
+    for (final record in pendingSocials) {
+      emitProgress('Sincronizando registro social ${record.id}');
+      try {
+        await _socialRemotePort.saveSocialRecord(record);
+        await _socialLocalPort.updateSyncStatus(record.id, 'synced');
+        synced++;
+      } catch (e) {
+        await _socialLocalPort.updateSyncStatus(record.id, 'error');
+        failed++;
+        errors.add('social:${record.id}: $e');
       }
       completed++;
     }
