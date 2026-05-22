@@ -1,5 +1,5 @@
 import 'package:field_colector/domain/entities/outing.dart';
-import 'package:field_colector/features/expeditions/data/fake_expeditions_data.dart';
+import 'package:field_colector/domain/ports/outing_local_port.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_create_screen.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_detail_screen.dart';
@@ -28,6 +28,10 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
   final Set<String> _selectedIds = {};
   String _searchQuery = '';
 
+  List<Outing> _outings = [];
+  bool _loading = true;
+  String? _loadError;
+
   /// Cuando no es null, se muestra el detalle de esta expedición.
   Outing? _detailOuting;
 
@@ -36,6 +40,12 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
 
   FieldSessionProvider? _fieldSessionListened;
   int _seenEnterFieldEpoch = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOutings());
+  }
 
   @override
   void dispose() {
@@ -66,10 +76,31 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     });
   }
 
+  Future<void> _loadOutings() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final outings = await context.read<OutingLocalPort>().getAllOutings();
+      if (!mounted) return;
+      setState(() {
+        _outings = outings;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
   List<Outing> get _filtered {
-    if (_searchQuery.isEmpty) return kFakeOutings;
+    if (_searchQuery.isEmpty) return _outings;
     final q = _searchQuery.toLowerCase();
-    return kFakeOutings.where((o) {
+    return _outings.where((o) {
       return o.name.toLowerCase().contains(q) ||
           o.prefix.toLowerCase().contains(q) ||
           o.location.toLowerCase().contains(q) ||
@@ -88,7 +119,10 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     // ── Create mode ──
     if (_showCreate) {
       return ExpeditionCreateScreen(
-        onBack: () => setState(() => _showCreate = false),
+        onBack: () {
+          setState(() => _showCreate = false);
+          _loadOutings();
+        },
       );
     }
 
@@ -96,7 +130,10 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     if (_detailOuting != null) {
       return ExpeditionDetailScreen(
         outing: _detailOuting!,
-        onBack: () => setState(() => _detailOuting = null),
+        onBack: () {
+          setState(() => _detailOuting = null);
+          _loadOutings();
+        },
       );
     }
 
@@ -148,56 +185,65 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
 
         // ── Scrollable list ──
         Expanded(
-          child: (_unselected.isEmpty && _selected.isEmpty)
-              ? const Center(
-                  child: Text(
-                    'Sin resultados',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                )
-              : ListView(
-                  children: [
-                    // ── Unselected section ──
-                    if (_unselected.isNotEmpty) ...[
-                      _SectionHeader(
-                        title: 'Expediciones disponibles',
-                        count: _unselected.length,
-                      ),
-                      ..._unselected.map(
-                        (o) => ExpeditionCard(
-                          outing: o,
-                          isSelected: false,
-                          onCheckChanged: (_) {
-                            setState(() => _selectedIds.add(o.id));
-                          },
-                          onTap: () =>
-                              setState(() => _detailOuting = o),
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _loadError != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          _loadError!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
-                    ],
-
-                    // ── Selected section ──
-                    if (_selected.isNotEmpty) ...[
-                      _SectionHeader(
-                        title: 'Seleccionadas',
-                        count: _selected.length,
-                      ),
-                      ..._selected.map(
-                        (o) => ExpeditionCard(
-                          outing: o,
-                          isSelected: true,
-                          onCheckChanged: (_) {
-                            setState(() => _selectedIds.remove(o.id));
-                          },
-                          onTap: () =>
-                              setState(() => _detailOuting = o),
+                    )
+                  : (_unselected.isEmpty && _selected.isEmpty)
+                      ? const Center(
+                          child: Text(
+                            'Sin resultados',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        )
+                      : ListView(
+                          children: [
+                            if (_unselected.isNotEmpty) ...[
+                              _SectionHeader(
+                                title: 'Expediciones disponibles',
+                                count: _unselected.length,
+                              ),
+                              ..._unselected.map(
+                                (o) => ExpeditionCard(
+                                  outing: o,
+                                  isSelected: false,
+                                  onCheckChanged: (_) {
+                                    setState(() => _selectedIds.add(o.id));
+                                  },
+                                  onTap: () =>
+                                      setState(() => _detailOuting = o),
+                                ),
+                              ),
+                            ],
+                            if (_selected.isNotEmpty) ...[
+                              _SectionHeader(
+                                title: 'Seleccionadas',
+                                count: _selected.length,
+                              ),
+                              ..._selected.map(
+                                (o) => ExpeditionCard(
+                                  outing: o,
+                                  isSelected: true,
+                                  onCheckChanged: (_) {
+                                    setState(() => _selectedIds.remove(o.id));
+                                  },
+                                  onTap: () =>
+                                      setState(() => _detailOuting = o),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                          ],
                         ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 16),
-                  ],
-                ),
         ),
       ],
     );
