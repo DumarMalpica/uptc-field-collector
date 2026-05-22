@@ -1,5 +1,29 @@
 import 'package:field_colector/adapters/real/firebase_auth_adapter.dart';
+import 'package:field_colector/adapters/real/firebase_social_record_adapter.dart';
+import 'package:field_colector/adapters/real/isar_bird_record_adapter.dart';
+import 'package:field_colector/adapters/real/isar_outing_adapter.dart';
+import 'package:field_colector/adapters/real/isar_rock_record_adapter.dart';
+import 'package:field_colector/adapters/real/isar_social_record_adapter.dart';
+import 'package:field_colector/adapters/real/isar_soil_record_adapter.dart';
 import 'package:field_colector/adapters/real/isar_user_adapter.dart';
+import 'package:field_colector/adapters/real/isar_vegetation_record_adapter.dart';
+import 'package:field_colector/adapters/real/isar_water_record_adapter.dart';
+import 'package:field_colector/adapters/real/photo_storage_adapter.dart';
+import 'package:field_colector/core/services/connectivity_sync_service.dart';
+import 'package:field_colector/core/services/record_submit_service.dart';
+import 'package:field_colector/core/services/sync_service.dart';
+import 'package:field_colector/core/services/user_cache_service.dart';
+import 'package:field_colector/domain/ports/photo_local_port.dart';
+import 'package:field_colector/domain/ports/sync_port.dart';
+import 'package:field_colector/domain/mappers/form_mapper_registry.dart';
+import 'package:field_colector/domain/ports/bird_record_local_port.dart';
+import 'package:field_colector/domain/ports/outing_local_port.dart';
+import 'package:field_colector/domain/ports/rock_record_local_port.dart';
+import 'package:field_colector/domain/ports/social_record_local_port.dart';
+import 'package:field_colector/domain/ports/social_record_remote_port.dart';
+import 'package:field_colector/domain/ports/soil_record_local_port.dart';
+import 'package:field_colector/domain/ports/vegetation_record_local_port.dart';
+import 'package:field_colector/domain/ports/water_record_local_port.dart';
 import 'package:field_colector/core/database/app_settings_store.dart';
 import 'package:field_colector/core/database/form_draft_service.dart';
 import 'package:field_colector/adapters/geolocator_provider.dart';
@@ -47,9 +71,16 @@ import 'package:field_colector/features/utilities/export_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Android puede auto-init nativo mientras Dart ve apps vacío; hot restart igual.
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
+  }
   await FMTCObjectBoxBackend().initialise();
   await initializeDateFormatting('es');
 
@@ -94,7 +125,6 @@ class MyApp extends StatelessWidget {
             sessionValidation: sessionValidation,
           ),
         ),
-        ChangeNotifierProvider(create: (_) => FieldSessionProvider()),
         ChangeNotifierProvider(create: (_) => FormDraftService()),
         Provider<MapServices>.value(value: mapServices),
         ChangeNotifierProvider(
@@ -110,11 +140,44 @@ class MyApp extends StatelessWidget {
         ),
 
         Provider<BirdRecordRemotePort>(create: (_) => FirebaseBirdRecordAdapter(FirebaseFirestore.instance)),
+        Provider<BirdRecordLocalPort>(create: (_) => IsarBirdRecordAdapter()),
         Provider<OutingRemotePort>(create: (_) => FirebaseOutingAdapter(FirebaseFirestore.instance)),
+        Provider<OutingLocalPort>(create: (_) => IsarOutingAdapter()),
+        ChangeNotifierProvider(
+          create: (context) => FieldSessionProvider(
+            outingLocal: context.read<OutingLocalPort>(),
+          ),
+        ),
         Provider<RockRecordRemotePort>(create: (_) => FirebaseRockRecordAdapter(FirebaseFirestore.instance)),
+        Provider<RockRecordLocalPort>(create: (_) => IsarRockRecordAdapter()),
         Provider<SoilRecordRemotePort>(create: (_) => FirebaseSoilRecordAdapter(FirebaseFirestore.instance)),
+        Provider<SoilRecordLocalPort>(create: (_) => IsarSoilRecordAdapter()),
         Provider<SpeciesRemotePort>(create: (_) => FirebaseSpeciesAdapter(FirebaseFirestore.instance)),
         Provider<UserRemotePort>(create: (_) => FirebaseUserAdapter(FirebaseFirestore.instance)),
+        Provider<UserCacheService>(
+          create: (context) => UserCacheService(
+            userRemote: context.read<UserRemotePort>(),
+          ),
+        ),
+        Provider<VegetationRecordLocalPort>(create: (_) => IsarVegetationRecordAdapter()),
+        Provider<WaterRecordLocalPort>(create: (_) => IsarWaterRecordAdapter()),
+        Provider<SocialRecordRemotePort>(
+          create: (_) => FirebaseSocialRecordAdapter(FirebaseFirestore.instance),
+        ),
+        Provider<SocialRecordLocalPort>(create: (_) => IsarSocialRecordAdapter()),
+        Provider<FormMapperRegistry>(create: (_) => FormMapperRegistry()),
+        Provider<RecordSubmitService>(
+          create: (context) => RecordSubmitService(
+            registry: context.read<FormMapperRegistry>(),
+            outingLocal: context.read<OutingLocalPort>(),
+            birdLocal: context.read<BirdRecordLocalPort>(),
+            rockLocal: context.read<RockRecordLocalPort>(),
+            soilLocal: context.read<SoilRecordLocalPort>(),
+            vegetationLocal: context.read<VegetationRecordLocalPort>(),
+            waterLocal: context.read<WaterRecordLocalPort>(),
+            socialLocal: context.read<SocialRecordLocalPort>(),
+          ),
+        ),
         ChangeNotifierProvider<ProfileProvider>(
           create: (context) => ProfileProvider(
             auth: context.read<Authprovider>(),
@@ -123,6 +186,30 @@ class MyApp extends StatelessWidget {
         ),
         Provider<VegetationRecordRemotePort>(create: (_) => FirebaseVegetationRecordAdapter(FirebaseFirestore.instance)),
         Provider<WaterRecordRemotePort>(create: (_) => FirebaseWaterRecordAdapter(FirebaseFirestore.instance)),
+        Provider<PhotoLocalPort>(create: (_) => PhotoStorageAdapter()),
+        Provider<SyncPort>(
+          create: (context) => SyncService(
+            outingLocalPort: context.read<OutingLocalPort>(),
+            outingRemotePort: context.read<OutingRemotePort>(),
+            birdLocalPort: context.read<BirdRecordLocalPort>(),
+            birdRemotePort: context.read<BirdRecordRemotePort>(),
+            rockLocalPort: context.read<RockRecordLocalPort>(),
+            rockRemotePort: context.read<RockRecordRemotePort>(),
+            soilLocalPort: context.read<SoilRecordLocalPort>(),
+            soilRemotePort: context.read<SoilRecordRemotePort>(),
+            vegLocalPort: context.read<VegetationRecordLocalPort>(),
+            vegRemotePort: context.read<VegetationRecordRemotePort>(),
+            waterLocalPort: context.read<WaterRecordLocalPort>(),
+            waterRemotePort: context.read<WaterRecordRemotePort>(),
+            socialLocalPort: context.read<SocialRecordLocalPort>(),
+            socialRemotePort: context.read<SocialRecordRemotePort>(),
+            photoLocalPort: context.read<PhotoLocalPort>(),
+          ),
+        ),
+        Provider<ConnectivitySyncService>(
+          create: (context) =>
+              ConnectivitySyncService(context.read<SyncPort>())..startListening(),
+        ),
         Provider<ExportService>(
           create: (context) => ExportService(
             birdPort: context.read<BirdRecordRemotePort>(),
@@ -130,6 +217,7 @@ class MyApp extends StatelessWidget {
             soilPort: context.read<SoilRecordRemotePort>(),
             vegetationPort: context.read<VegetationRecordRemotePort>(),
             waterPort: context.read<WaterRecordRemotePort>(),
+            socialPort: context.read<SocialRecordRemotePort>(),
           ),
         ),
       ],
