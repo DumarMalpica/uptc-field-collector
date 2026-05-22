@@ -7,8 +7,10 @@ import '../../domain/ports/rock_record_remote_port.dart';
 import '../../domain/ports/soil_record_remote_port.dart';
 import '../../domain/ports/vegetation_record_remote_port.dart';
 import '../../domain/ports/water_record_remote_port.dart';
+import '../../domain/ports/social_record_remote_port.dart';
 
 import '../../domain/entities/bird_record.dart';
+import '../../domain/entities/social_record.dart';
 import '../../domain/entities/rock_record.dart';
 import '../../domain/entities/soil_record.dart';
 import '../../domain/entities/vegetation_record.dart';
@@ -20,6 +22,7 @@ class ExportService {
   final SoilRecordRemotePort soilPort;
   final VegetationRecordRemotePort vegetationPort;
   final WaterRecordRemotePort waterPort;
+  final SocialRecordRemotePort socialPort;
 
   ExportService({
     required this.birdPort,
@@ -27,6 +30,7 @@ class ExportService {
     required this.soilPort,
     required this.vegetationPort,
     required this.waterPort,
+    required this.socialPort,
   });
 
   Future<String?> generateExcel({String? outingId, String? userId, DateTime? startDate, DateTime? endDate, required String fileNamePrefix}) async {
@@ -159,6 +163,55 @@ class ExportService {
             TextCellValue(w.sampleId ?? ''), TextCellValue(w.samplingGoal ?? ''),
             TextCellValue(w.sampleType ?? ''), TextCellValue(w.container ?? ''), // <-- Corregido a w.container
             TextCellValue(fotosResumen)
+          ]);
+        }
+      }
+
+      final socials = await socialPort.getSocialRecordsForExport(
+        outingId: outingId,
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      if (socials.isNotEmpty) {
+        Sheet sheet = excel['Social'];
+        sheet.appendRow([
+          TextCellValue('ID Registro'),
+          TextCellValue('Fecha'),
+          TextCellValue('Latitud'),
+          TextCellValue('Longitud'),
+          TextCellValue('ID Encuestado'),
+          TextCellValue('Actor'),
+          TextCellValue('Tipo Actor'),
+          TextCellValue('Edad'),
+          TextCellValue('Género'),
+          TextCellValue('Nivel Educativo'),
+          TextCellValue('Actividad Principal'),
+          TextCellValue('Tiempo Territorio'),
+          TextCellValue('Dependencia RN'),
+          TextCellValue('Percepción Cambio'),
+          TextCellValue('Impacto Paisaje'),
+          TextCellValue('Observaciones'),
+        ]);
+
+        for (SocialRecord s in socials) {
+          sheet.appendRow([
+            TextCellValue(s.id),
+            TextCellValue(s.recordedAt.toIso8601String()),
+            DoubleCellValue(s.coordinates.latitude),
+            DoubleCellValue(s.coordinates.longitude),
+            TextCellValue(s.respondentId),
+            TextCellValue(s.actorName),
+            TextCellValue(s.actorType),
+            DoubleCellValue(s.age),
+            TextCellValue(s.gender),
+            TextCellValue(s.educationLevel),
+            TextCellValue(s.mainActivity),
+            DoubleCellValue(s.timeInTerritory),
+            TextCellValue(s.naturalResourceDependency),
+            TextCellValue(s.coverageChangePerception),
+            TextCellValue(s.perceivedLandscapeImpact),
+            TextCellValue(s.observations ?? ''),
           ]);
         }
       }
