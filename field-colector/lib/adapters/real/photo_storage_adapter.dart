@@ -133,7 +133,6 @@ class PhotoStorageAdapter implements PhotoLocalPort {
   }
 
   // ── Cloudinary Storage upload ──────────────────────────────────────────────
-  // No forma parte de PhotoLocalPort — lo llama el servicio de sincronización.
 
   Future<void> uploadToFirebase(String photoId, String outingPrefix) async {
     final isar = await IsarService.getInstance();
