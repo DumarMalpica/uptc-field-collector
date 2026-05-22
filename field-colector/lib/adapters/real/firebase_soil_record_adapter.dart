@@ -4,6 +4,7 @@ import '../../domain/ports/soil_record_remote_port.dart';
 import '../../domain/entities/photo.dart';
 import '../../domain/entities/coordinate.dart';
 import '../../domain/entities/plot.dart';
+import 'record_photo_sync_helper.dart';
 
 class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
   final FirebaseFirestore _firestore;
@@ -51,6 +52,16 @@ class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
         'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType,
       }).toList(),
     });
+
+    if (item.photos.isNotEmpty) {
+      await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+        recordId: item.id,
+        recordType: 'soil',
+        outingId: item.outingId,
+        photos: item.photos,
+        firestore: _firestore,
+      );
+    }
   }
 
   @override
