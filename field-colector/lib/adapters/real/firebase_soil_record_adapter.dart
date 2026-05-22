@@ -21,7 +21,6 @@ class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
       'municipality': item.municipality,
       'village': item.village,
       'sector': item.sector,
-      'syncStatus': item.syncStatus,
       'coordinates': {
         'latitude': item.coordinates.latitude,
         'longitude': item.coordinates.longitude,
@@ -49,7 +48,7 @@ class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
       },
       'photos': item.photos.map((p) => {
         'id': p.id, 'filename': p.filename, 'localPath': p.localPath, 'storageUrl': p.storageUrl,
-        'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType, 'syncStatus': p.syncStatus
+        'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType,
       }).toList(),
     });
   }
@@ -125,7 +124,7 @@ class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
       municipality: data['municipality'] ?? '',
       village: data['village'] ?? '',
       sector: data['sector'] ?? '',
-      syncStatus: data['syncStatus'] ?? 'synced',
+      syncStatus: 'synced',
       coordinates: Coordinate(
         latitude: (coord['latitude'] ?? 0.0).toDouble(),
         longitude: (coord['longitude'] ?? 0.0).toDouble(),
@@ -154,7 +153,7 @@ class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
       photos: (data['photos'] as List<dynamic>? ?? []).map((p) => Photo(
         id: p['id'] ?? '', filename: p['filename'] ?? '', localPath: p['localPath'] ?? '',
         storageUrl: p['storageUrl'] ?? '', photoType: p['photoType'] ?? '', recordId: p['recordId'] ?? '',
-        recordType: p['recordType'] ?? '', syncStatus: p['syncStatus'] ?? '',
+        recordType: p['recordType'] ?? '', syncStatus: 'synced',
       )).toList(),
     );
   }

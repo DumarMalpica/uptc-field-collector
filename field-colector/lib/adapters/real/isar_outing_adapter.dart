@@ -58,6 +58,16 @@ class IsarOutingAdapter implements OutingLocalPort {
     if (data.containsKey('participantIds')) {
       model.participantIds = List<String>.from(data['participantIds'] as List);
     }
+    if (data.containsKey('participants')) {
+      final list = data['participants'] as List;
+      model.participants = list
+          .map((e) => OutingMemberModel.fromDomain(
+                e is OutingMember
+                    ? e
+                    : OutingMember.fromMap(e as Map<String, dynamic>),
+              ))
+          .toList();
+    }
     if (data.containsKey('status')) model.status = data['status'] as String;
     if (data.containsKey('syncStatus')) model.syncStatus = data['syncStatus'] as String;
     await isar.writeTxn(() async {
@@ -181,7 +191,10 @@ class IsarOutingAdapter implements OutingLocalPort {
   Future<List<Outing>> getPendingSyncOutings() async {
     final isar = await IsarService.getInstance();
     final query = isar.outingModels.buildQuery<OutingModel>(
-      filter: FilterCondition.equalTo(property: 'syncStatus', value: 'pending'),
+      filter: FilterGroup.or([
+        FilterCondition.equalTo(property: 'syncStatus', value: 'pending'),
+        FilterCondition.equalTo(property: 'syncStatus', value: 'error'),
+      ]),
     );
     final results = await query.findAll();
     return results.map((m) => m.toDomain()).toList();

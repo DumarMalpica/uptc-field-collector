@@ -22,29 +22,29 @@ class ExpeditionCard extends StatelessWidget {
   final ValueChanged<bool> onCheckChanged;
   final VoidCallback onTap;
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'active':
+  Color _syncStatusColor(String syncStatus) {
+    switch (syncStatus) {
+      case 'synced':
         return AppColors.primary;
-      case 'closed':
-        return AppColors.error;
-      case 'draft':
+      case 'pending':
         return AppColors.accent;
+      case 'error':
+        return AppColors.error;
       default:
         return AppColors.textSecondary;
     }
   }
 
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'active':
-        return 'Activa';
-      case 'closed':
-        return 'Cerrada';
-      case 'draft':
-        return 'Borrador';
+  String _syncStatusLabel(String syncStatus) {
+    switch (syncStatus) {
+      case 'synced':
+        return 'Sincronizada';
+      case 'pending':
+        return 'Pendiente';
+      case 'error':
+        return 'Error';
       default:
-        return status;
+        return syncStatus;
     }
   }
 
@@ -108,7 +108,7 @@ class ExpeditionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
 
-                  // ── Dates + Status ──
+                  // ── Dates + Sync status ──
                   Row(
                     children: [
                       Icon(
@@ -135,17 +135,17 @@ class ExpeditionCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: _statusColor(outing.status).withValues(
+                          color: _syncStatusColor(outing.syncStatus).withValues(
                             alpha: 0.15,
                           ),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          _statusLabel(outing.status),
+                          _syncStatusLabel(outing.syncStatus),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: _statusColor(outing.status),
+                            color: _syncStatusColor(outing.syncStatus),
                           ),
                         ),
                       ),

@@ -1,6 +1,10 @@
+import 'package:field_colector/core/services/user_cache_service.dart';
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/domain/entities/user.dart';
-import 'package:field_colector/features/expeditions/data/fake_expeditions_data.dart';
+import 'package:field_colector/domain/outing_member_display.dart';
+import 'package:field_colector/domain/ports/outing_local_port.dart';
+import 'package:field_colector/domain/ports/outing_remote_port.dart';
+import 'package:field_colector/features/records/screens/record_list_screen.dart';
 import 'package:field_colector/features/map/download/map_tile_download_flow.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
@@ -31,83 +35,220 @@ class ExpeditionDetailScreen extends StatefulWidget {
 
 class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
   late Outing _outing;
+  Map<String, User> _userMap = {};
+  bool _showRecordList = false;
   bool _isDownloadingMap = false;
+  bool _isJoining = false;
+  bool _isAccepting = false;
 
   @override
   void initState() {
     super.initState();
     _outing = widget.outing;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshOuting());
   }
 
-  User? _resolveUser(String id) => kFakeUsers[id];
+  Future<void> _refreshOuting() async {
+    final fresh =
+        await context.read<OutingLocalPort>().getOutingById(_outing.id);
+    if (fresh == null || !mounted) return;
+
+    final sessionUser = context.read<Authprovider>().user;
+    final ids = {
+      fresh.createdById,
+      ...fresh.participantIds,
+    };
+    final users = await context.read<UserCacheService>().resolveUsers(
+          ids,
+          sessionUser: sessionUser,
+        );
+
+    await _backfillParticipantProfiles(fresh, users);
+
+    if (!mounted) return;
+    final updated =
+        await context.read<OutingLocalPort>().getOutingById(_outing.id);
+    setState(() {
+      _outing = updated ?? fresh;
+      _userMap = users;
+    });
+  }
+
+  /// Añade perfiles embebidos para IDs legacy sin entrada en [participants].
+  Future<void> _backfillParticipantProfiles(
+    Outing outing,
+    Map<String, User> resolved,
+  ) async {
+    final knownIds = outing.participants.map((m) => m.id).toSet();
+    final toAdd = <OutingMember>[];
+
+    final idsToFill = {
+      ...outing.participantIds,
+      if (outing.createdById.isNotEmpty) outing.createdById,
+    };
+    for (final id in idsToFill) {
+      if (knownIds.contains(id)) continue;
+      final user = resolved[id];
+      if (user == null) continue;
+      toAdd.add(OutingMember(
+        id: id,
+        name: user.fullName,
+        email: user.email,
+      ));
+    }
+
+    if (toAdd.isEmpty) return;
+
+    final newParticipants = [...outing.participants, ...toAdd];
+    final local = context.read<OutingLocalPort>();
+    final remote = context.read<OutingRemotePort>();
+    final payload = {
+      'participants': newParticipants.map((m) => m.toMap()).toList(),
+    };
+    await local.updateOuting(outing.id, payload);
+    try {
+      await remote.updateOuting(outing.id, payload);
+    } catch (_) {}
+  }
+
+  User? _userById(String id) => _userMap[id];
+
+  String _memberLabel(String id, {OutingMember? member}) => memberDisplayLabel(
+        id: id,
+        member: member ?? _outing.memberById(id),
+        resolved: _userById(id),
+      );
+
+  String? _memberSubtitle(String id, String label, {OutingMember? member}) =>
+      memberDisplaySubtitle(
+        id: id,
+        member: member ?? _outing.memberById(id),
+        resolved: _userById(id),
+        label: label,
+      );
+
+  String _outingStatusLabel(String status) {
+    switch (status) {
+      case 'active':
+        return 'Activa';
+      case 'closed':
+        return 'Cerrada';
+      default:
+        return status;
+    }
+  }
+
+  String _syncStatusLabel(String syncStatus) {
+    switch (syncStatus) {
+      case 'synced':
+        return 'Sincronizada';
+      case 'pending':
+        return 'Pendiente';
+      case 'error':
+        return 'Error';
+      default:
+        return syncStatus;
+    }
+  }
 
   bool _isOwner(String currentUserId) => _outing.createdById == currentUserId;
 
   bool _alreadyPending(String currentUserId) =>
       _outing.pendingUsers.any((u) => u.id == currentUserId);
 
-  bool _isParticipant(String currentUserId) => _outing.participantIds.contains(currentUserId);
+  bool _canEnterField(String currentUserId) => _outing.isMember(currentUserId);
 
-  void _requestJoin(User? currentUser) {
-    if (currentUser == null) return;
+  Future<void> _requestJoin(User? currentUser) async {
+    if (currentUser == null || _isJoining) return;
 
-    setState(() {
-      _outing = Outing(
-        id: _outing.id,
-        prefix: _outing.prefix,
-        name: _outing.name,
-        location: _outing.location,
-        zone: _outing.zone,
-        reason: _outing.reason,
-        latitude: _outing.latitude,
-        longitude: _outing.longitude,
-        altitude: _outing.altitude,
-        startDate: _outing.startDate,
-        endDate: _outing.endDate,
-        createdById: _outing.createdById,
-        participantIds: _outing.participantIds,
-        status: _outing.status,
-        syncStatus: _outing.syncStatus,
-        pendingUsers: [
-          ..._outing.pendingUsers,
-          PendingUser(
-            id: currentUser.id,
-            name: currentUser.fullName,
-            email: currentUser.email,
-          ),
-        ],
-      );
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Solicitud enviada'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final pending = PendingUser(
+      id: currentUser.id,
+      name: currentUser.fullName,
+      email: currentUser.email,
     );
+
+    setState(() => _isJoining = true);
+    try {
+      final local = context.read<OutingLocalPort>();
+      final remote = context.read<OutingRemotePort>();
+      await local.addPendingUserToOuting(_outing.id, pending);
+      try {
+        await remote.addPendingUserToOuting(_outing.id, pending);
+      } catch (_) {
+        // Offline: queda en local; sync_service puede reintentar.
+      }
+      await _refreshOuting();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Solicitud enviada'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al solicitar: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isJoining = false);
+    }
   }
 
-  void _acceptUser(PendingUser pu) {
-    setState(() {
-      _outing = Outing(
-        id: _outing.id,
-        prefix: _outing.prefix,
-        name: _outing.name,
-        location: _outing.location,
-        zone: _outing.zone,
-        reason: _outing.reason,
-        latitude: _outing.latitude,
-        longitude: _outing.longitude,
-        altitude: _outing.altitude,
-        startDate: _outing.startDate,
-        endDate: _outing.endDate,
-        createdById: _outing.createdById,
-        participantIds: [..._outing.participantIds, pu.id],
-        status: _outing.status,
-        syncStatus: _outing.syncStatus,
-        pendingUsers: _outing.pendingUsers.where((u) => u.id != pu.id).toList(),
+  Future<void> _acceptUser(PendingUser pu) async {
+    if (_isAccepting) return;
+
+    final newParticipantIds = [..._outing.participantIds, pu.id];
+    final newParticipants = [
+      ..._outing.participants,
+      OutingMember(id: pu.id, name: pu.name, email: pu.email),
+    ];
+    final updatePayload = {
+      'participantIds': newParticipantIds,
+      'participants': newParticipants.map((m) => m.toMap()).toList(),
+    };
+
+    setState(() => _isAccepting = true);
+    try {
+      final local = context.read<OutingLocalPort>();
+      final remote = context.read<OutingRemotePort>();
+      await local.updateOuting(_outing.id, updatePayload);
+      await local.removePendingUserFromOuting(_outing.id, pu.id);
+      try {
+        await remote.updateOuting(_outing.id, updatePayload);
+        await remote.removePendingUserFromOuting(_outing.id, pu.id);
+      } catch (_) {}
+      await _refreshOuting();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al aprobar: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
-    });
+    } finally {
+      if (mounted) setState(() => _isAccepting = false);
+    }
+  }
+
+  Future<void> _enterFieldMode(String currentUserId) async {
+    final ok = await context.read<FieldSessionProvider>().enterFieldMode(
+          outingId: _outing.id,
+          userId: currentUserId,
+        );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No puedes entrar en campo en esta expedición'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _downloadMap() async {
@@ -155,10 +296,19 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showRecordList) {
+      return RecordListScreen(
+        outingId: _outing.id,
+        onBack: () => setState(() => _showRecordList = false),
+      );
+    }
+
     final currentUser = context.watch<Authprovider>().user;
     final currentUserId = currentUser?.id ?? '';
     final dateFormat = DateFormat('dd MMM yyyy', 'es');
-    final director = _resolveUser(_outing.createdById);
+    final directorLabel = _memberLabel(_outing.createdById);
+    final directorSubtitle =
+        _memberSubtitle(_outing.createdById, directorLabel);
 
     return Column(
       children: [
@@ -200,8 +350,8 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               const SizedBox(height: 4),
               _InfoRow(
                 icon: Icons.person,
-                label: director?.fullName ?? 'Desconocido',
-                subtitle: director?.email,
+                label: directorLabel,
+                subtitle: directorSubtitle,
               ),
               const SizedBox(height: 16),
 
@@ -232,10 +382,13 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
                 label: 'Fecha fin',
                 value: dateFormat.format(_outing.endDate),
               ),
-              _DetailField(label: 'Estado', value: _outing.status),
+              _DetailField(
+                label: 'Estado',
+                value: _outingStatusLabel(_outing.status),
+              ),
               _DetailField(
                 label: 'Sincronización',
-                value: _outing.syncStatus,
+                value: _syncStatusLabel(_outing.syncStatus),
               ),
               const SizedBox(height: 16),
 
@@ -245,11 +398,12 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               ),
               const SizedBox(height: 8),
               ..._outing.participantIds.map((id) {
-                final user = _resolveUser(id);
+                final member = _outing.memberById(id);
+                final label = _memberLabel(id, member: member);
                 return _InfoRow(
                   icon: Icons.person_outline,
-                  label: user?.fullName ?? id,
-                  subtitle: user?.email,
+                  label: label,
+                  subtitle: _memberSubtitle(id, label, member: member),
                 );
               }),
               const SizedBox(height: 16),
@@ -280,7 +434,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
                     trailing: _isOwner(currentUserId)
                         ? IconButton(
                             icon: const Icon(Icons.check_circle, color: AppColors.primary),
-                            onPressed: () => _acceptUser(pu),
+                            onPressed: _isAccepting ? null : () => _acceptUser(pu),
                           )
                         : null,
                   ),
@@ -310,14 +464,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
             children: [
               // Listar registros
               OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Próximamente: Listar registros'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => setState(() => _showRecordList = true),
                 icon: const Icon(Icons.list_alt, size: 18),
                 label: const Text('Registros'),
               ),
@@ -340,32 +487,40 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               const SizedBox(height: 8),
 
               // Solicitar unirse (solo si no eres propietario ni participante)
-              if (!_isOwner(currentUserId) && !_isParticipant(currentUserId)) ...[
+              if (!_canEnterField(currentUserId)) ...[
                 ElevatedButton.icon(
-                  onPressed: _alreadyPending(currentUserId) ? null : () => _requestJoin(currentUser),
+                  onPressed: _isJoining ||
+                          _alreadyPending(currentUserId) ||
+                          currentUser == null
+                      ? null
+                      : () => _requestJoin(currentUser),
                   icon: Icon(
                     _alreadyPending(currentUserId) ? Icons.check : Icons.person_add,
                     size: 18,
                   ),
                   label: Text(
-                    _alreadyPending(currentUserId) ? 'Pendiente' : 'Solicitar unirse',
+                    _alreadyPending(currentUserId)
+                        ? 'Pendiente'
+                        : _isJoining
+                            ? 'Enviando...'
+                            : 'Solicitar unirse',
                   ),
                 ),
                 const SizedBox(height: 8),
               ],
 
-              // En campo
-              ElevatedButton.icon(
-                onPressed: () {
-                  context.read<FieldSessionProvider>().enterFieldMode();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.textPrimary,
+              if (_canEnterField(currentUserId))
+                ElevatedButton.icon(
+                  onPressed: currentUserId.isEmpty
+                      ? null
+                      : () => _enterFieldMode(currentUserId),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.textPrimary,
+                  ),
+                  icon: const Icon(Icons.explore, size: 18),
+                  label: const Text('En campo'),
                 ),
-                icon: const Icon(Icons.explore, size: 18),
-                label: const Text('En campo'),
-              ),
             ],
           ),
         ),

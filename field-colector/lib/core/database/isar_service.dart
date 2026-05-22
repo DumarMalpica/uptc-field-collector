@@ -8,6 +8,7 @@ import '../../adapters/real/rock_record_model.dart';
 import '../../adapters/real/soil_record_model.dart';
 import '../../adapters/real/vegetation_record_model.dart';
 import '../../adapters/real/water_record_model.dart';
+import '../../adapters/real/social_record_model.dart';
 
 /// Servicio singleton que gestiona la instancia de Isar.
 ///
@@ -33,6 +34,7 @@ class IsarService {
         SoilRecordModelSchema,
         VegetationRecordModelSchema,
         WaterRecordModelSchema,
+        SocialRecordModelSchema,
       ],
       directory: dir.path,
       name: 'citesa_field_collector',

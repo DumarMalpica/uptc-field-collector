@@ -3,33 +3,29 @@ import '../../domain/entities/outing.dart';
 
 part 'outing_model.g.dart';
 
-/// Modelo embebido para persistir [PendingUser] dentro de [OutingModel].
-///
-/// Isar no persiste clases de dominio directamente; este modelo actúa como
-/// capa de traducción sin contaminar la entidad pura.
+/// Modelo embebido para persistir [OutingMember] dentro de [OutingModel].
 @embedded
-class PendingUserModel {
+class OutingMemberModel {
   String id = '';
   String name = '';
   String email = '';
 
-  PendingUser toDomain() => PendingUser(id: id, name: name, email: email);
+  OutingMember toDomain() => OutingMember(id: id, name: name, email: email);
 
-  static PendingUserModel fromDomain(PendingUser u) => PendingUserModel()
-    ..id = u.id
-    ..name = u.name
-    ..email = u.email;
+  static OutingMemberModel fromDomain(OutingMember m) => OutingMemberModel()
+    ..id = m.id
+    ..name = m.name
+    ..email = m.email;
 }
 
+/// Alias para compatibilidad con código que referencia PendingUserModel.
+typedef PendingUserModel = OutingMemberModel;
+
 /// Modelo de persistencia Isar para [Outing].
-///
-/// Separa la entidad pura de dominio del modelo de base de datos.
-/// Solo este archivo y sus adaptadores conocen Isar.
 @Collection()
 class OutingModel {
   Id id = Isar.autoIncrement;
 
-  /// ID de Firebase — clave de búsqueda principal.
   @Index(unique: true)
   late String outingId;
 
@@ -47,7 +43,8 @@ class OutingModel {
   late List<String> participantIds;
   late String status;
   late String syncStatus;
-  late List<PendingUserModel> pendingUsers;
+  late List<OutingMemberModel> participants;
+  late List<OutingMemberModel> pendingUsers;
 
   Outing toDomain() => Outing(
         id: outingId,
@@ -65,6 +62,7 @@ class OutingModel {
         participantIds: List<String>.from(participantIds),
         status: status,
         syncStatus: syncStatus,
+        participants: participants.map((m) => m.toDomain()).toList(),
         pendingUsers: pendingUsers.map((m) => m.toDomain()).toList(),
       );
 
@@ -84,6 +82,6 @@ class OutingModel {
     ..participantIds = List<String>.from(o.participantIds)
     ..status = o.status
     ..syncStatus = o.syncStatus
-    ..pendingUsers =
-        o.pendingUsers.map(PendingUserModel.fromDomain).toList();
+    ..participants = o.participants.map(OutingMemberModel.fromDomain).toList()
+    ..pendingUsers = o.pendingUsers.map(OutingMemberModel.fromDomain).toList();
 }

@@ -6,7 +6,13 @@
 ///
 /// [catalogEntry] identifica el módulo en [FieldFormDefinition]; el proveedor
 /// ya incluye campos fusionados desde `common_data.json`.
+import 'dart:async';
+
+import 'package:field_colector/core/services/record_submit_service.dart';
+import 'package:field_colector/domain/ports/sync_port.dart';
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/dashboard/data/field_form_catalog.dart';
+import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
 import 'package:field_colector/features/forms/widgets/field_widget_factory.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
@@ -21,10 +27,12 @@ class DynamicFormScreen extends StatefulWidget {
     super.key,
     required this.catalogEntry,
     required this.onBack,
+    this.onSubmitted,
   });
 
   final FieldFormDefinition catalogEntry;
   final VoidCallback onBack;
+  final VoidCallback? onSubmitted;
 
   @override
   State<DynamicFormScreen> createState() => _DynamicFormScreenState();
@@ -32,12 +40,91 @@ class DynamicFormScreen extends StatefulWidget {
 
 class _DynamicFormScreenState extends State<DynamicFormScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
 
   String _sectionTitle(int section) {
     if (section == 0) {
       return 'Datos comunes';
     }
     return widget.catalogEntry.title;
+  }
+
+  Future<void> _onSubmit(FormProvider form) async {
+    if (!form.allVisibleRequiredFieldsFilled) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    final outingId = context.read<FieldSessionProvider>().activeOutingId;
+    if (outingId == null || outingId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Activa una expedición en campo antes de guardar'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final userId = context.read<Authprovider>().user?.id ?? '';
+    if (userId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sesión no válida'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      await context.read<RecordSubmitService>().submit(
+            moduleFormId: form.moduleFormId,
+            values: form.values,
+            outingId: outingId,
+            userId: userId,
+          );
+      await form.clearPersistedDraft();
+      form.markSkipPersistOnDispose();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registro guardado localmente'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      final sync = context.read<SyncPort>();
+      unawaited(
+        sync.syncPendingData().then((result) {
+          if (!mounted || result.failed == 0) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${result.synced} sincronizados, ${result.failed} fallaron',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }),
+      );
+
+      widget.onSubmitted?.call();
+      widget.onBack();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -87,6 +174,7 @@ class _DynamicFormScreenState extends State<DynamicFormScreen> {
         }
 
         final visible = form.visibleFieldsOrdered();
+        final canSubmit = form.allVisibleRequiredFieldsFilled && !_isSubmitting;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,6 +224,47 @@ class _DynamicFormScreenState extends State<DynamicFormScreen> {
                     }
                     return fieldWidget;
                   },
+                ),
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: canSubmit ? () => _onSubmit(form) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textOnPrimary,
+                  disabledBackgroundColor:
+                      AppColors.primary.withValues(alpha: 0.35),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textOnPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.save_outlined, size: 20),
+                label: Text(
+                  _isSubmitting ? 'Guardando...' : 'Guardar registro',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

@@ -21,7 +21,6 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
       'municipality': item.municipality,
       'village': item.village,
       'sector': item.sector,
-      'syncStatus': item.syncStatus,
       'coordinates': {
         'latitude': item.coordinates.latitude,
         'longitude': item.coordinates.longitude,
@@ -49,7 +48,7 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
       // Faltaba agregar las fotos aquí
       'photos': item.photos.map((p) => {
         'id': p.id, 'filename': p.filename, 'localPath': p.localPath, 'storageUrl': p.storageUrl,
-        'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType, 'syncStatus': p.syncStatus
+        'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType,
       }).toList(),
     });
   }
@@ -124,7 +123,7 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
       municipality: data['municipality'] ?? '',
       village: data['village'] ?? '',
       sector: data['sector'] ?? '',
-      syncStatus: data['syncStatus'] ?? 'synced',
+      syncStatus: 'synced',
       coordinates: Coordinate(
         latitude: (coord['latitude'] ?? 0.0).toDouble(),
         longitude: (coord['longitude'] ?? 0.0).toDouble(),
@@ -152,7 +151,7 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
       photos: (data['photos'] as List<dynamic>? ?? []).map((p) => Photo(
         id: p['id'] ?? '', filename: p['filename'] ?? '', localPath: p['localPath'] ?? '',
         storageUrl: p['storageUrl'] ?? '', photoType: p['photoType'] ?? '', recordId: p['recordId'] ?? '',
-        recordType: p['recordType'] ?? '', syncStatus: p['syncStatus'] ?? '',
+        recordType: p['recordType'] ?? '', syncStatus: 'synced',
       )).toList(),
     );
   }

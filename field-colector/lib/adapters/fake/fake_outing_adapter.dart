@@ -22,6 +22,18 @@ class FakeOutingAdapter implements OutingLocalPort {
       endDate: DateTime(2025, 6, 17),
       createdById: 'fake-uid-001',
       participantIds: ['fake-uid-001', 'fake-uid-002'],
+      participants: [
+        const OutingMember(
+          id: 'fake-uid-001',
+          name: 'Ana García',
+          email: 'ana@citeza.test',
+        ),
+        const OutingMember(
+          id: 'fake-uid-002',
+          name: 'Carlos Ruiz',
+          email: 'carlos@citeza.test',
+        ),
+      ],
       status: 'active',
       syncStatus: 'synced',
     ),
@@ -39,6 +51,13 @@ class FakeOutingAdapter implements OutingLocalPort {
       endDate: DateTime(2025, 8, 8),
       createdById: 'fake-uid-002',
       participantIds: ['fake-uid-002'],
+      participants: [
+        const OutingMember(
+          id: 'fake-uid-002',
+          name: 'Carlos Ruiz',
+          email: 'carlos@citeza.test',
+        ),
+      ],
       status: 'active',
       syncStatus: 'synced',
     ),
@@ -56,6 +75,13 @@ class FakeOutingAdapter implements OutingLocalPort {
       endDate: DateTime(2025, 3, 5),
       createdById: 'fake-uid-001',
       participantIds: ['fake-uid-001'],
+      participants: [
+        const OutingMember(
+          id: 'fake-uid-001',
+          name: 'Ana García',
+          email: 'ana@citeza.test',
+        ),
+      ],
       status: 'closed',
       syncStatus: 'pending',
     ),
@@ -108,6 +134,13 @@ class FakeOutingAdapter implements OutingLocalPort {
       participantIds: data['participantIds'] != null
           ? List<String>.from(data['participantIds'] as List)
           : o.participantIds,
+      participants: data['participants'] != null
+          ? (data['participants'] as List)
+              .map((e) => e is OutingMember
+                  ? e
+                  : OutingMember.fromMap(e as Map<String, dynamic>))
+              .toList()
+          : o.participants,
       status: data['status'] as String? ?? o.status,
       syncStatus: data['syncStatus'] as String? ?? o.syncStatus,
       pendingUsers: o.pendingUsers,
@@ -217,6 +250,7 @@ class FakeOutingAdapter implements OutingLocalPort {
         endDate: o.endDate,
         createdById: o.createdById,
         participantIds: o.participantIds,
+        participants: o.participants,
         status: status ?? o.status,
         syncStatus: syncStatus ?? o.syncStatus,
         pendingUsers: o.pendingUsers,
@@ -237,6 +271,7 @@ class FakeOutingAdapter implements OutingLocalPort {
         endDate: o.endDate,
         createdById: o.createdById,
         participantIds: o.participantIds,
+        participants: o.participants,
         status: o.status,
         syncStatus: o.syncStatus,
         pendingUsers: pendingUsers,

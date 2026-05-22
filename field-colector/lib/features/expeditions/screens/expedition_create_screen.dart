@@ -1,19 +1,20 @@
 import 'package:field_colector/domain/entities/outing.dart';
+import 'package:field_colector/domain/ports/outing_local_port.dart';
+import 'package:field_colector/domain/ports/outing_remote_port.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/expeditions/widgets/location_picker_widget.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 /// Pantalla de creación de expedición.
 ///
 /// Recopila todos los campos de [Outing]. La ubicación (lat/lon/alt) se
 /// selecciona mediante [LocationPickerWidget] con mapa embebido.
 ///
-/// **Adaptador de persistencia no implementado aún.** El submit construye
-/// el [Outing] pero solo muestra un SnackBar informando que la creación
-/// estará disponible próximamente.
+/// Persiste en Isar (offline) e intenta sincronizar con Firestore si hay red.
 class ExpeditionCreateScreen extends StatefulWidget {
   const ExpeditionCreateScreen({
     super.key,
@@ -49,6 +50,7 @@ class _ExpeditionCreateScreenState extends State<ExpeditionCreateScreen> {
 
   // ── Map expanded state ──
   bool _mapExpanded = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -90,8 +92,19 @@ class _ExpeditionCreateScreenState extends State<ExpeditionCreateScreen> {
     }
   }
 
+  bool get _canSubmit =>
+      !_isSubmitting &&
+      _prefixCtrl.text.trim().isNotEmpty &&
+      _nameCtrl.text.trim().isNotEmpty &&
+      _locationCtrl.text.trim().isNotEmpty &&
+      _zoneCtrl.text.trim().isNotEmpty &&
+      _reasonCtrl.text.trim().isNotEmpty &&
+      _startDate != null &&
+      _endDate != null &&
+      _pickedLocation != null;
+
   // ── Submit ──
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_pickedLocation == null) {
@@ -116,9 +129,18 @@ class _ExpeditionCreateScreenState extends State<ExpeditionCreateScreen> {
 
     final currentUser = context.read<Authprovider>().user;
     final userId = currentUser?.id ?? '';
+    if (userId.isEmpty) return;
 
+    setState(() => _isSubmitting = true);
+
+    final outingId = const Uuid().v4();
+    final creator = OutingMember(
+      id: userId,
+      name: currentUser!.fullName,
+      email: currentUser.email,
+    );
     final outing = Outing(
-      id: '', // TODO(adapter): generar ID en adaptador
+      id: outingId,
       prefix: _prefixCtrl.text.trim(),
       name: _nameCtrl.text.trim(),
       location: _locationCtrl.text.trim(),
@@ -131,24 +153,44 @@ class _ExpeditionCreateScreenState extends State<ExpeditionCreateScreen> {
       endDate: _endDate!,
       createdById: userId,
       participantIds: [userId],
-      status: 'draft',
+      participants: [creator],
+      status: 'active',
       syncStatus: 'pending',
     );
 
-    // TODO(adapter): llamar OutingRemotePort.saveOuting(outing) cuando exista
-    // el adaptador de creación de expedición.
-    // widget.onCreated?.call(outing);
+    final outingLocal = context.read<OutingLocalPort>();
+    final outingRemote = context.read<OutingRemotePort>();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Próximamente: crear expedición'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      await outingLocal.saveOuting(outing);
 
-    // Log para debugging durante desarrollo.
-    debugPrint('[ExpeditionCreate] Outing construido: ${outing.name} '
-        '(${outing.latitude}, ${outing.longitude}, ${outing.altitude}m)');
+      try {
+        await outingRemote.saveOuting(outing);
+        await outingLocal.updateSyncStatus(outingId, 'synced');
+      } catch (_) {
+        // Sin red: queda pending en Isar para SyncService.
+      }
+
+      if (!mounted) return;
+      widget.onCreated?.call(outing);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Expedición "${outing.name}" creada'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      widget.onBack();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al crear expedición: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -373,16 +415,27 @@ class _ExpeditionCreateScreenState extends State<ExpeditionCreateScreen> {
             ],
           ),
           child: ElevatedButton.icon(
-            onPressed: _onSubmit,
+            onPressed: _canSubmit ? _onSubmit : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textOnPrimary,
+              disabledBackgroundColor:
+                  AppColors.primary.withValues(alpha: 0.35),
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
-            icon: const Icon(Icons.add_circle_outline, size: 20),
-            label: const Text(
-              'Crear expedición',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            icon: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.textOnPrimary,
+                    ),
+                  )
+                : const Icon(Icons.add_circle_outline, size: 20),
+            label: Text(
+              _isSubmitting ? 'Creando...' : 'Crear expedición',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
         ),

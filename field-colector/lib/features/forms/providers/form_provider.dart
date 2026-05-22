@@ -51,6 +51,17 @@ class FormProvider extends ChangeNotifier {
   Map<String, dynamic> get values => Map.unmodifiable(_values);
   bool get isDirty => _dirty;
 
+  /// `true` cuando todos los campos obligatorios visibles tienen valor válido.
+  /// Omite `image_capture` (fotos aún sin implementar).
+  bool get allVisibleRequiredFieldsFilled {
+    for (final field in visibleFieldsOrdered()) {
+      if (!field.isRequired) continue;
+      if (field.type == 'image_capture') continue;
+      if (!_isFieldValueFilled(field)) return false;
+    }
+    return true;
+  }
+
   bool isFieldVisible(String fieldId) => _visibleFieldIds.contains(fieldId);
 
   dynamic valueFor(String fieldId) => _values[fieldId];
@@ -241,6 +252,30 @@ class FormProvider extends ChangeNotifier {
   /// Visible fields in display order.
   List<FormFieldDef> visibleFieldsOrdered() {
     return _fields.where((f) => _visibleFieldIds.contains(f.fieldId)).toList();
+  }
+
+  bool _isFieldValueFilled(FormFieldDef field) {
+    final raw = _values[field.fieldId];
+
+    switch (field.type) {
+      case 'multi_select':
+        return raw is List && raw.isNotEmpty;
+      case 'gps_capture':
+        if (raw is! Map) return false;
+        final lat = raw['latitude'];
+        final lon = raw['longitude'];
+        return lat != null && lon != null;
+      case 'number_integer':
+      case 'number_decimal':
+        if (raw == null) return false;
+        if (raw is num) return true;
+        return double.tryParse(raw.toString()) != null;
+      default:
+        if (raw == null) return false;
+        if (raw is String) return raw.trim().isNotEmpty;
+        if (raw is List) return raw.isNotEmpty;
+        return true;
+    }
   }
 
   @override

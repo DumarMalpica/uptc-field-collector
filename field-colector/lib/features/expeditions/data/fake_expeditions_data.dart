@@ -50,6 +50,17 @@ final Map<String, User> kFakeUsers = {
   ),
 };
 
+List<OutingMember> _membersFromIds(List<String> ids) => ids
+    .map((id) {
+      final u = kFakeUsers[id];
+      return OutingMember(
+        id: id,
+        name: u?.fullName ?? '',
+        email: u?.email ?? '',
+      );
+    })
+    .toList();
+
 /// Lista de expediciones hardcodeadas para pruebas de UI.
 final List<Outing> kFakeOutings = [
   Outing(
@@ -66,6 +77,7 @@ final List<Outing> kFakeOutings = [
     endDate: DateTime(2026, 5, 15),
     createdById: 'fake-uid-001',
     participantIds: ['fake-uid-001', 'fake-uid-002', 'fake-uid-003'],
+    participants: _membersFromIds(['fake-uid-001', 'fake-uid-002', 'fake-uid-003']),
     status: 'active',
     syncStatus: 'synced',
     pendingUsers: [
@@ -90,6 +102,7 @@ final List<Outing> kFakeOutings = [
     endDate: DateTime(2026, 6, 25),
     createdById: 'fake-uid-002',
     participantIds: ['fake-uid-002', 'fake-uid-005'],
+    participants: _membersFromIds(['fake-uid-002', 'fake-uid-005']),
     status: 'active',
     syncStatus: 'pending',
     pendingUsers: [],
@@ -108,6 +121,7 @@ final List<Outing> kFakeOutings = [
     endDate: DateTime(2026, 3, 20),
     createdById: 'fake-uid-001',
     participantIds: ['fake-uid-001', 'fake-uid-004'],
+    participants: _membersFromIds(['fake-uid-001', 'fake-uid-004']),
     status: 'closed',
     syncStatus: 'synced',
     pendingUsers: [],
@@ -126,7 +140,8 @@ final List<Outing> kFakeOutings = [
     endDate: DateTime(2026, 7, 18),
     createdById: 'fake-uid-003',
     participantIds: ['fake-uid-003'],
-    status: 'draft',
+    participants: _membersFromIds(['fake-uid-003']),
+    status: 'active',
     syncStatus: 'pending',
     pendingUsers: [
       PendingUser(
@@ -155,6 +170,7 @@ final List<Outing> kFakeOutings = [
     endDate: DateTime(2026, 8, 12),
     createdById: 'fake-uid-004',
     participantIds: ['fake-uid-004', 'fake-uid-001'],
+    participants: _membersFromIds(['fake-uid-004', 'fake-uid-001']),
     status: 'active',
     syncStatus: 'synced',
     pendingUsers: [],
