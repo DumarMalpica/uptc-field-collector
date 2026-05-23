@@ -3,6 +3,7 @@ import '../../domain/entities/water_record.dart';
 import '../../domain/ports/water_record_remote_port.dart';
 import '../../domain/entities/photo.dart';
 import '../../domain/entities/coordinate.dart';
+import 'record_photo_sync_helper.dart';
 
 class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
   final FirebaseFirestore _firestore;
@@ -51,6 +52,16 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
         'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType,
       }).toList(),
     });
+
+    if (item.photos.isNotEmpty) {
+      await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+        recordId: item.id,
+        recordType: 'water',
+        outingId: item.outingId,
+        photos: item.photos,
+        firestore: _firestore,
+      );
+    }
   }
 
   @override

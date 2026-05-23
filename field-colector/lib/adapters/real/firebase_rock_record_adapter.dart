@@ -3,6 +3,7 @@ import '../../domain/entities/rock_record.dart';
 import '../../domain/ports/rock_record_remote_port.dart';
 import '../../domain/entities/photo.dart';
 import '../../domain/entities/coordinate.dart';
+import 'record_photo_sync_helper.dart';
 
 class FirebaseRockRecordAdapter implements RockRecordRemotePort {
   final FirebaseFirestore _firestore;
@@ -43,6 +44,16 @@ class FirebaseRockRecordAdapter implements RockRecordRemotePort {
         'photoType': p.photoType, 'recordId': p.recordId, 'recordType': p.recordType,
       }).toList(),
     });
+
+    if (item.photos.isNotEmpty) {
+      await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+        recordId: item.id,
+        recordType: 'rock',
+        outingId: item.outingId,
+        photos: item.photos,
+        firestore: _firestore,
+      );
+    }
   }
 
   @override
