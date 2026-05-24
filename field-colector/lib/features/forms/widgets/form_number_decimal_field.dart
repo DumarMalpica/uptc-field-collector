@@ -4,6 +4,7 @@
 /// el valor se almacena como cadena en el proveedor (el backend puede parsear).
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
+import 'package:field_colector/features/forms/widgets/form_field_label.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,7 +48,7 @@ class _FormNumberDecimalFieldState extends State<FormNumberDecimalField> {
         FilteringTextInputFormatter.allow(RegExp(r'[0-9.,-]')),
       ],
       decoration: InputDecoration(
-        labelText: widget.field.label,
+        label: FormFieldLabel(text: widget.field.label),
         border: const OutlineInputBorder(),
         filled: true,
         fillColor: AppColors.surface,
