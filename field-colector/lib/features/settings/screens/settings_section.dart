@@ -9,6 +9,7 @@ import 'package:field_colector/features/settings/widgets/settings_group.dart';
 import 'package:field_colector/features/settings/widgets/settings_tile.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
+import 'package:field_colector/features/manual/screens/user_manual_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
@@ -409,6 +410,28 @@ class _SettingsSectionState extends State<SettingsSection> {
                   ),
                 ],
               ),
+              SettingsGroup(
+                title: 'Ayuda y soporte',
+                icon: PhosphorIconsRegular.question,
+                children: [
+                  SettingsTile.action(
+                    title: 'Manual de usuario',
+                    subtitle: 'Guía de uso e instrucciones de la app',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const UserManualScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  SettingsTile.action(
+                    title: 'Contacto y soporte',
+                    subtitle: settings.supportEmail,
+                    onTap: () => _openSupportEmail(settings),
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
               SettingsGroup(
                 title: 'Acerca de',
@@ -417,11 +440,6 @@ class _SettingsSectionState extends State<SettingsSection> {
                   SettingsTile.info(
                     title: 'Versión',
                     subtitle: versionLabel,
-                  ),
-                  SettingsTile.action(
-                    title: 'Contacto y soporte',
-                    subtitle: settings.supportEmail,
-                    onTap: () => _openSupportEmail(settings),
                   ),
                 ],
               ),
