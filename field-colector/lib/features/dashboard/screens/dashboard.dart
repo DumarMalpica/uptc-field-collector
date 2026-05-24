@@ -5,9 +5,15 @@ import 'package:field_colector/features/dashboard/widgets/field_registration_pan
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_list_screen.dart';
-import 'package:field_colector/features/profile/widgets/profile_section.dart';
-import 'package:field_colector/features/settings/screens/settings_section.dart';
+import 'package:field_colector/features/map/models/map_record_pin.dart';
+import 'package:field_colector/features/map/providers/nearby_records_provider.dart';
 import 'package:field_colector/features/map/screens/map_screen.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:field_colector/features/profile/widgets/profile_section.dart';
+import 'package:field_colector/features/records/models/record_list_item.dart';
+import 'package:field_colector/features/records/screens/record_detail_screen.dart';
+import 'package:field_colector/features/records/services/record_detail_refresh.dart';
+import 'package:field_colector/features/settings/screens/settings_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -38,6 +44,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   final GlobalKey<FieldRegistrationPanelState> _fieldRegistrationPanelKey =
       GlobalKey<FieldRegistrationPanelState>();
+
+  RecordListItem? _mapPinDetailItem;
+
+  final ValueNotifier<LatLng?> _mapFocusNotifier = ValueNotifier(null);
 
   @override
   void initState() {
@@ -83,6 +93,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void dispose() {
     _fieldSessionListened?.removeListener(_onFieldSessionChanged);
     _sidebarController.dispose();
+    _mapFocusNotifier.dispose();
     super.dispose();
   }
 
@@ -121,7 +132,37 @@ class _DashboardScreenState extends State<DashboardScreen>
       setState(() => _activeSection = section);
       return;
     }
-    setState(() => _activeSection = section);
+    setState(() {
+      _mapPinDetailItem = null;
+      _activeSection = section;
+    });
+    if (!_sidebarOpen) _openSidebar();
+  }
+
+  Future<void> _handlePinTap(MapRecordPin pin) async {
+    final nearby = context.read<NearbyRecordsProvider>();
+    final record = await RecordDetailRefresh.fetchWithRemoteFallback(
+      context,
+      moduleFormId: pin.moduleFormId,
+      recordId: pin.recordId,
+      tryRemote: nearby.isOnline,
+    );
+    if (!mounted) return;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registro no encontrado'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    final item = RecordListItem.fromModule(record, pin.moduleFormId);
+    if (item == null) return;
+    setState(() {
+      _mapPinDetailItem = item;
+      _activeSection = SidebarSection.home;
+    });
     if (!_sidebarOpen) _openSidebar();
   }
 
@@ -157,6 +198,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (didPop) return;
 
     if (_sidebarOpen) {
+      if (_mapPinDetailItem != null) {
+        setState(() => _mapPinDetailItem = null);
+        return;
+      }
       if (_activeSection == SidebarSection.fieldRegistration &&
           (_fieldRegistrationPanelKey.currentState?.isFormOpen ?? false)) {
         await _fieldRegistrationPanelKey.currentState!.closeFormToCatalog();
@@ -191,9 +236,29 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildSectionContent() {
+    if (_mapPinDetailItem != null) {
+      return RecordDetailScreen(
+        item: _mapPinDetailItem!,
+        onBack: () => setState(() => _mapPinDetailItem = null),
+        onNavigateToLocation: (latLng) {
+          _mapFocusNotifier.value = null;
+          _mapFocusNotifier.value = latLng;
+          context.read<NearbyRecordsProvider>().setFocusCenter(latLng);
+          _closeSidebar();
+        },
+      );
+    }
+
     switch (_activeSection) {
       case SidebarSection.expeditions:
-        return const ExpeditionListScreen();
+        return ExpeditionListScreen(
+          onNavigateToLocation: (latLng) {
+            _mapFocusNotifier.value = null;
+            _mapFocusNotifier.value = latLng;
+            context.read<NearbyRecordsProvider>().setFocusCenter(latLng);
+            _closeSidebar();
+          },
+        );
       case SidebarSection.fieldRegistration:
         return FieldRegistrationPanel(key: _fieldRegistrationPanelKey);
       case SidebarSection.profile:
@@ -229,7 +294,21 @@ class _DashboardScreenState extends State<DashboardScreen>
         body: Stack(
         fit: StackFit.expand,
         children: [
-          MapScreen(locator: widget.locator, embedded: true),
+          Consumer<NearbyRecordsProvider>(
+            builder: (context, nearby, _) => MapScreen(
+              locator: widget.locator,
+              embedded: true,
+              recordPins: nearby.nearbyPins,
+              onPinTapped: _handlePinTap,
+              onUserPositionChanged: nearby.updatePosition,
+              showRecordLegend: true,
+              offlineMapDataHint: !nearby.isOnline,
+              legendBottomInset: fieldMode ? bottom + 52 : 12,
+              activeModuleFilters: nearby.activeModuleFilters,
+              onModuleFilterToggled: nearby.toggleModuleFilter,
+              focusNotifier: _mapFocusNotifier,
+            ),
+          ),
 
           if (fieldMode)
             Positioned(
