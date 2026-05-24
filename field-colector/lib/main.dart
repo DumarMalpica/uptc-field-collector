@@ -12,6 +12,7 @@ import 'package:field_colector/adapters/real/photo_storage_adapter.dart';
 import 'package:field_colector/core/services/connectivity_sync_service.dart';
 import 'package:field_colector/core/services/expedition_sync_service.dart';
 import 'package:field_colector/core/services/record_local_persistence.dart';
+import 'package:field_colector/core/services/record_sync_service.dart';
 import 'package:field_colector/core/services/record_submit_service.dart';
 import 'package:field_colector/core/services/sync_service.dart';
 import 'package:field_colector/core/services/user_cache_service.dart';
@@ -182,6 +183,18 @@ class MyApp extends StatelessWidget {
             vegetationLocal: context.read<VegetationRecordLocalPort>(),
             waterLocal: context.read<WaterRecordLocalPort>(),
             socialLocal: context.read<SocialRecordLocalPort>(),
+          ),
+        ),
+        Provider<RecordSyncService>(
+          create: (context) => RecordSyncService(
+            birdRemote: context.read<BirdRecordRemotePort>(),
+            rockRemote: context.read<RockRecordRemotePort>(),
+            soilRemote: context.read<SoilRecordRemotePort>(),
+            vegetationRemote: context.read<VegetationRecordRemotePort>(),
+            waterRemote: context.read<WaterRecordRemotePort>(),
+            socialRemote: context.read<SocialRecordRemotePort>(),
+            recordPersistence: context.read<RecordLocalPersistence>(),
+            reachability: context.read<MapServices>().reachability,
           ),
         ),
         ChangeNotifierProvider(
