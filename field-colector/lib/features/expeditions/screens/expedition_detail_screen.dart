@@ -12,6 +12,7 @@ import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/widgets/detail_field.dart';
 import 'package:field_colector/features/utilities/widgets/detail_section_title.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/export/providers/export_provider.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -256,6 +257,25 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
     }
   }
 
+  Future<void> _exportRecords() async {
+    final export = context.read<ExportProvider>();
+    final prefix =
+        _outing.prefix.isNotEmpty ? _outing.prefix : _outing.name;
+    final ok = await export.exportByOuting(
+      outingId: _outing.id,
+      filePrefix: prefix,
+    );
+    if (!mounted) return;
+    if (!ok && export.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(export.errorMessage!),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   Future<void> _downloadMap() async {
     final services = context.read<MapServices>();
 
@@ -310,6 +330,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
     }
 
     final currentUser = context.watch<Authprovider>().user;
+    final export = context.watch<ExportProvider>();
     final currentUserId = currentUser?.id ?? '';
     final dateFormat = DateFormat('dd MMM yyyy', 'es');
     final directorLabel = _memberLabel(_outing.createdById);
@@ -488,6 +509,23 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
                     : const Icon(Icons.download, size: 18),
                 label: Text(
                   _isDownloadingMap ? 'Descargando...' : 'Descargar mapa',
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              OutlinedButton.icon(
+                onPressed: export.isExporting ? null : _exportRecords,
+                icon: export.isExporting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.file_download_outlined, size: 18),
+                label: Text(
+                  export.isExporting
+                      ? 'Exportando...'
+                      : 'Exportar registros',
                 ),
               ),
               const SizedBox(height: 8),

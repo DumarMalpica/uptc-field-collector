@@ -69,6 +69,8 @@ import 'package:field_colector/adapters/real/firebase_user_adapter.dart';
 import 'package:field_colector/adapters/real/firebase_vegetation_record_adapter.dart';
 import 'package:field_colector/adapters/real/firebase_water_record_adapter.dart';
 
+import 'package:field_colector/features/export/providers/export_provider.dart';
+import 'package:field_colector/features/manual/providers/manual_intro_provider.dart';
 import 'package:field_colector/features/utilities/export_service.dart';
 
 Future<void> main() async {
@@ -127,6 +129,9 @@ class MyApp extends StatelessWidget {
             authPort: authPort,
             sessionValidation: sessionValidation,
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ManualIntroProvider(),
         ),
         ChangeNotifierProvider(create: (_) => FormDraftService()),
         Provider<MapServices>.value(value: mapServices),
@@ -259,6 +264,11 @@ class MyApp extends StatelessWidget {
             vegetationPort: context.read<VegetationRecordRemotePort>(),
             waterPort: context.read<WaterRecordRemotePort>(),
             socialPort: context.read<SocialRecordRemotePort>(),
+          ),
+        ),
+        ChangeNotifierProvider<ExportProvider>(
+          create: (context) => ExportProvider(
+            exportService: context.read<ExportService>(),
           ),
         ),
       ],
