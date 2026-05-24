@@ -108,9 +108,9 @@ class _FormImageCaptureFieldState extends State<FormImageCaptureField> {
     try {
       final file = await _picker.pickImage(
         source: source,
-        imageQuality: 90,
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageQuality: 50,
+        maxWidth: 1280,
+        maxHeight: 1280,
       );
       if (file == null) return;
 

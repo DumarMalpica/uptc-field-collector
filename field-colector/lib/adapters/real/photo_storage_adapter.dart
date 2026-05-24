@@ -18,8 +18,8 @@ class PhotoStorageAdapter implements PhotoLocalPort {
   final http.Client _httpClient;
 
   PhotoStorageAdapter({FirebaseStorage? storage, http.Client? httpClient})
-      : _storage = storage,
-        _httpClient = httpClient ?? http.Client();
+    : _storage = storage,
+      _httpClient = httpClient ?? http.Client();
 
   // ── PhotoLocalPort ────────────────────────────────────────────────────────
 
@@ -83,7 +83,10 @@ class PhotoStorageAdapter implements PhotoLocalPort {
 
     final isar = await IsarService.getInstance();
     final query = isar.photoModels.buildQuery<PhotoModel>(
-      filter: FilterCondition.equalTo(property: 'recordId', value: fromRecordId),
+      filter: FilterCondition.equalTo(
+        property: 'recordId',
+        value: fromRecordId,
+      ),
     );
     final results = await query.findAll();
     if (results.isEmpty) return;
@@ -155,8 +158,7 @@ class PhotoStorageAdapter implements PhotoLocalPort {
   }
 
   @override
-  Future<void> updatePhotoStorageUrl(
-      String photoId, String storageUrl) async {
+  Future<void> updatePhotoStorageUrl(String photoId, String storageUrl) async {
     final isar = await IsarService.getInstance();
     final query = isar.photoModels.buildQuery<PhotoModel>(
       filter: FilterCondition.equalTo(property: 'photoId', value: photoId),
@@ -191,16 +193,21 @@ class PhotoStorageAdapter implements PhotoLocalPort {
       if (!await file.exists()) {
         model.syncStatus = 'error';
       } else {
-        final url = Uri.parse('https://api.cloudinary.com/v1_1/dvcbrr7h7/image/upload');
+        final url = Uri.parse(
+          'https://api.cloudinary.com/v1_1/dvcbrr7h7/image/upload',
+        );
         final request = http.MultipartRequest('POST', url)
           ..fields['upload_preset'] = 'proyectoApp'
-          ..files.add(await http.MultipartFile.fromPath('file', model.localPath));
+          ..files.add(
+            await http.MultipartFile.fromPath('file', model.localPath),
+          );
 
         final streamedResponse = await _httpClient.send(request);
         final response = await http.Response.fromStream(streamedResponse);
 
         if (response.statusCode == 200) {
-          final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+          final responseData =
+              jsonDecode(response.body) as Map<String, dynamic>;
           final secureUrl = responseData['secure_url'] as String;
 
           model
@@ -209,7 +216,9 @@ class PhotoStorageAdapter implements PhotoLocalPort {
 
           final collection = _collectionFromRecordType(model.recordType);
           if (collection != null) {
-            final docRef = FirebaseFirestore.instance.collection(collection).doc(model.recordId);
+            final docRef = FirebaseFirestore.instance
+                .collection(collection)
+                .doc(model.recordId);
             final doc = await docRef.get();
             if (doc.exists) {
               final data = doc.data();
@@ -265,12 +274,16 @@ class PhotoStorageAdapter implements PhotoLocalPort {
 
   // ── Helpers privados ──────────────────────────────────────────────────────
 
+  /// Límite presentable en móvil; prioriza tamaño en Cloudinary.
+  static const _maxPhotoDim = 1024;
+  static const _jpegQuality = 40;
+
   Future<Uint8List> _compress(Uint8List bytes) async {
     final result = await FlutterImageCompress.compressWithList(
       bytes,
-      minWidth: 1920,
-      minHeight: 1920,
-      quality: 95,
+      minWidth: _maxPhotoDim,
+      minHeight: _maxPhotoDim,
+      quality: _jpegQuality,
       format: CompressFormat.jpeg,
     );
     return result;
