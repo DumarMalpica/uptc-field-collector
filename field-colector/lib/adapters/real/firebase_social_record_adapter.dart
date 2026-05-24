@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/coordinate.dart';
+import '../../domain/entities/photo.dart';
 import '../../domain/entities/social_record.dart';
 import '../../domain/ports/social_record_remote_port.dart';
+import 'record_photo_sync_helper.dart';
 
 class FirebaseSocialRecordAdapter implements SocialRecordRemotePort {
   final FirebaseFirestore _firestore;
@@ -12,6 +14,16 @@ class FirebaseSocialRecordAdapter implements SocialRecordRemotePort {
   @override
   Future<void> saveSocialRecord(SocialRecord item) async {
     await _firestore.collection(_collection).doc(item.id).set(_toFirestore(item));
+
+    if (item.photos.isNotEmpty) {
+      await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+        recordId: item.id,
+        recordType: 'social',
+        outingId: item.outingId,
+        photos: item.photos,
+        firestore: _firestore,
+      );
+    }
   }
 
   @override
@@ -76,6 +88,15 @@ class FirebaseSocialRecordAdapter implements SocialRecordRemotePort {
     return snapshot.docs.map(_mapSnapshotToSocialRecord).toList();
   }
 
+  @override
+  Stream<List<SocialRecord>> watchSocialRecordsByOuting(String outingId) {
+    return _firestore
+        .collection(_collection)
+        .where('outingId', isEqualTo: outingId)
+        .snapshots()
+        .map((snap) => snap.docs.map(_mapSnapshotToSocialRecord).toList());
+  }
+
   Map<String, dynamic> _toFirestore(SocialRecord item) => {
         'outingId': item.outingId,
         'userId': item.userId,
@@ -118,6 +139,20 @@ class FirebaseSocialRecordAdapter implements SocialRecordRemotePort {
         'practiceType': item.practiceType,
         'perceivedLandscapeImpact': item.perceivedLandscapeImpact,
         'observations': item.observations,
+        'photos': item.photos
+            .map(
+              (p) => {
+                'id': p.id,
+                'filename': p.filename,
+                'localPath': p.localPath,
+                'storageUrl': p.storageUrl,
+                'photoType': p.photoType,
+                'recordId': p.recordId,
+                'recordType': p.recordType,
+                'syncStatus': p.syncStatus,
+              },
+            )
+            .toList(),
       };
 
   SocialRecord _mapSnapshotToSocialRecord(DocumentSnapshot doc) {
@@ -169,6 +204,20 @@ class FirebaseSocialRecordAdapter implements SocialRecordRemotePort {
       practiceType: data['practiceType'],
       perceivedLandscapeImpact: data['perceivedLandscapeImpact'] ?? '',
       observations: data['observations'],
+      photos: (data['photos'] as List<dynamic>? ?? [])
+          .map(
+            (p) => Photo(
+              id: p['id'] ?? '',
+              filename: p['filename'] ?? '',
+              localPath: p['localPath'] ?? '',
+              storageUrl: p['storageUrl'] ?? '',
+              photoType: p['photoType'] ?? '',
+              recordId: p['recordId'] ?? '',
+              recordType: p['recordType'] ?? '',
+              syncStatus: p['syncStatus'] ?? 'synced',
+            ),
+          )
+          .toList(),
     );
   }
 }
