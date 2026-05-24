@@ -36,6 +36,7 @@ import 'package:field_colector/features/profile/providers/profile_provider.dart'
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/home/screens/home.dart';
 import 'package:field_colector/features/map/map_services.dart';
+import 'package:field_colector/features/map/providers/nearby_records_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
@@ -165,11 +166,13 @@ class MyApp extends StatelessWidget {
           create: (_) => FirebaseSocialRecordAdapter(FirebaseFirestore.instance),
         ),
         Provider<SocialRecordLocalPort>(create: (_) => IsarSocialRecordAdapter()),
+        Provider<PhotoLocalPort>(create: (_) => PhotoStorageAdapter()),
         Provider<FormMapperRegistry>(create: (_) => FormMapperRegistry()),
         Provider<RecordSubmitService>(
           create: (context) => RecordSubmitService(
             registry: context.read<FormMapperRegistry>(),
             outingLocal: context.read<OutingLocalPort>(),
+            photoLocal: context.read<PhotoLocalPort>(),
             birdLocal: context.read<BirdRecordLocalPort>(),
             rockLocal: context.read<RockRecordLocalPort>(),
             soilLocal: context.read<SoilRecordLocalPort>(),
@@ -186,7 +189,25 @@ class MyApp extends StatelessWidget {
         ),
         Provider<VegetationRecordRemotePort>(create: (_) => FirebaseVegetationRecordAdapter(FirebaseFirestore.instance)),
         Provider<WaterRecordRemotePort>(create: (_) => FirebaseWaterRecordAdapter(FirebaseFirestore.instance)),
-        Provider<PhotoLocalPort>(create: (_) => PhotoStorageAdapter()),
+        ChangeNotifierProvider(
+          create: (context) => NearbyRecordsProvider(
+            birdLocal: context.read<BirdRecordLocalPort>(),
+            rockLocal: context.read<RockRecordLocalPort>(),
+            soilLocal: context.read<SoilRecordLocalPort>(),
+            vegetationLocal: context.read<VegetationRecordLocalPort>(),
+            waterLocal: context.read<WaterRecordLocalPort>(),
+            socialLocal: context.read<SocialRecordLocalPort>(),
+            birdRemote: context.read<BirdRecordRemotePort>(),
+            rockRemote: context.read<RockRecordRemotePort>(),
+            soilRemote: context.read<SoilRecordRemotePort>(),
+            vegetationRemote: context.read<VegetationRecordRemotePort>(),
+            waterRemote: context.read<WaterRecordRemotePort>(),
+            socialRemote: context.read<SocialRecordRemotePort>(),
+            reachability: context.read<MapServices>().reachability,
+            fieldSession: context.read<FieldSessionProvider>(),
+            auth: context.read<Authprovider>(),
+          )..start(),
+        ),
         Provider<SyncPort>(
           create: (context) => SyncService(
             outingLocalPort: context.read<OutingLocalPort>(),

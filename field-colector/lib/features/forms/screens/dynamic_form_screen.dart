@@ -9,6 +9,7 @@
 import 'dart:async';
 
 import 'package:field_colector/core/services/record_submit_service.dart';
+import 'package:field_colector/features/map/providers/nearby_records_provider.dart';
 import 'package:field_colector/domain/ports/sync_port.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/dashboard/data/field_form_catalog.dart';
@@ -85,11 +86,13 @@ class _DynamicFormScreenState extends State<DynamicFormScreen> {
             values: form.values,
             outingId: outingId,
             userId: userId,
+            draftRecordId: form.draftRecordId,
           );
       await form.clearPersistedDraft();
       form.markSkipPersistOnDispose();
 
       if (!mounted) return;
+      unawaited(context.read<NearbyRecordsProvider>().refreshLocal());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Registro guardado localmente'),
