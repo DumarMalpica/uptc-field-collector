@@ -118,14 +118,17 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
     try {
       final locations = await geo.locationFromAddress(query);
       if (locations.isEmpty) {
-        setState(() => _searchError = 'No se encontró "$query"');
+        setState(
+          () => _searchError = 'Lugar no encontrado. Intenta otra búsqueda.',
+        );
         return;
       }
       final loc = locations.first;
       final point = tryLatLng(loc.latitude, loc.longitude);
       if (point == null) {
-        setState(() =>
-            _searchError = 'Coordenadas inválidas para "$query"');
+        setState(
+          () => _searchError = 'Lugar no encontrado. Intenta otra búsqueda.',
+        );
         return;
       }
 
@@ -136,8 +139,10 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
 
       _mapController.move(point, 13);
       _emitLocation();
-    } catch (e) {
-      setState(() => _searchError = 'Error al buscar: $e');
+    } catch (_) {
+      setState(
+        () => _searchError = 'Lugar no encontrado. Intenta otra búsqueda.',
+      );
     } finally {
       if (mounted) setState(() => _searching = false);
     }
