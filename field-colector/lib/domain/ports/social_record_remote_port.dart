@@ -16,6 +16,8 @@ abstract class SocialRecordRemotePort {
     DateTime? startDate,
     DateTime? endDate,
   });
+
+  Stream<List<SocialRecord>> watchSocialRecordsByOuting(String outingId);
 }
 
 class SocialRecordSearchResult {

@@ -124,6 +124,15 @@ class FirebaseVegetationRecordAdapter implements VegetationRecordRemotePort {
     return snapshot.docs.map((doc) => _mapSnapshotToVegetationRecord(doc)).toList();
   }
 
+  @override
+  Stream<List<VegetationRecord>> watchVegetationRecordsByOuting(String outingId) {
+    return _firestore
+        .collection(_collection)
+        .where('outingId', isEqualTo: outingId)
+        .snapshots()
+        .map((snap) => snap.docs.map(_mapSnapshotToVegetationRecord).toList());
+  }
+
   VegetationRecord _mapSnapshotToVegetationRecord(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final coord = data['coordinates'] as Map<String, dynamic>? ?? {};

@@ -113,6 +113,15 @@ class FirebaseBirdRecordAdapter implements BirdRecordRemotePort {
     return snapshot.docs.map((doc) => _mapSnapshotToBirdRecord(doc)).toList();
   }
 
+  @override
+  Stream<List<BirdRecord>> watchBirdRecordsByOuting(String outingId) {
+    return _firestore
+        .collection(_collection)
+        .where('outingId', isEqualTo: outingId)
+        .snapshots()
+        .map((snap) => snap.docs.map(_mapSnapshotToBirdRecord).toList());
+  }
+
   BirdRecord _mapSnapshotToBirdRecord(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final coord = data['coordinates'] as Map<String, dynamic>? ?? {};

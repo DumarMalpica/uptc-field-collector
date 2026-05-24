@@ -8,6 +8,9 @@ abstract class BirdRecordRemotePort {
   Future<BirdRecord?> getBirdRecordById(String id);
   Future<BirdRecordSearchResult> getBirdRecords({int limit = 20, DocumentSnapshot? lastDocument});
   Future<List<BirdRecord>> getBirdRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
+
+  /// Tiempo real: registros de una expedición (mapa cercano).
+  Stream<List<BirdRecord>> watchBirdRecordsByOuting(String outingId);
 }
 
 class BirdRecordSearchResult {

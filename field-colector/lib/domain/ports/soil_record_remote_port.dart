@@ -8,6 +8,8 @@ abstract class SoilRecordRemotePort {
   Future<SoilRecord?> getSoilRecordById(String id);
   Future<SoilRecordSearchResult> getSoilRecords({int limit = 20, DocumentSnapshot? lastDocument});
   Future<List<SoilRecord>> getSoilRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
+
+  Stream<List<SoilRecord>> watchSoilRecordsByOuting(String outingId);
 }
 
 class SoilRecordSearchResult {

@@ -8,6 +8,8 @@ abstract class RockRecordRemotePort {
   Future<RockRecord?> getRockRecordById(String id);
   Future<RockRecordSearchResult> getRockRecords({int limit = 20, DocumentSnapshot? lastDocument});
   Future<List<RockRecord>> getRockRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
+
+  Stream<List<RockRecord>> watchRockRecordsByOuting(String outingId);
 }
 
 class RockRecordSearchResult {
