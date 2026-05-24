@@ -55,6 +55,14 @@ class _UserManualScreenState extends State<UserManualScreen> {
         content: _buildRecordsContent(textTheme),
       ),
       _ManualCardData(
+        title: 'Exportación',
+        subtitle: 'Descarga de datos en Excel',
+        icon: PhosphorIconsRegular.fileXls,
+        baseColor: AppColors.semilleroSkyBlue,
+        textColor: Colors.white,
+        content: _buildExportContent(textTheme),
+      ),
+      _ManualCardData(
         title: 'Configuraciones',
         subtitle: 'Ajustes del dispositivo y GPS',
         icon: PhosphorIconsRegular.sliders,
@@ -565,6 +573,145 @@ class _UserManualScreenState extends State<UserManualScreen> {
           description: 'Toma fotos directamente de la especie o zona de '
               'estudio. Las imágenes se guardan y se suben al servidor '
               'de forma automática.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExportContent(TextTheme textTheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Exportación de Datos',
+          style: textTheme.titleLarge?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Genera un archivo Excel (.xlsx) con los registros sincronizados '
+          'en el servidor. Puedes filtrar por alcance y rango de fechas, '
+          'y compartir el archivo con otras apps.',
+          style: AppStyles.body,
+        ),
+        const SizedBox(height: 24),
+        _buildGuideSection(
+          title: '¿Qué incluye el Excel?',
+          icon: PhosphorIconsRegular.table,
+          color: AppColors.semilleroSkyBlue,
+          body: 'Una hoja por módulo con datos:\n'
+              '• Aves\n'
+              '• Rocas\n'
+              '• Suelos\n'
+              '• Vegetación\n'
+              '• Agua\n'
+              '• Social\n\n'
+              'Solo se crean hojas para módulos que tengan registros '
+              'en el filtro elegido.',
+        ),
+        const SizedBox(height: 28),
+        _buildGuideSection(
+          title: 'Exportar desde Configuraciones',
+          icon: PhosphorIconsRegular.sliders,
+          color: AppColors.semilleroSkyBlue,
+          body: 'Opción avanzada con filtros de alcance y fechas.',
+        ),
+        const SizedBox(height: 16),
+        _buildStepByStep(
+          accentColor: AppColors.semilleroSkyBlue,
+          steps: [
+            _StepData(
+              title: 'Abrir panel de Configuraciones',
+              description: 'Desde el menú lateral, entra en Configuraciones '
+                  'y busca el grupo "Datos".',
+              visual: _buildMockExportSettingsTile(),
+            ),
+            _StepData(
+              title: 'Tocar "Exportar datos"',
+              description: 'Se abre un panel inferior para elegir alcance '
+                  'y, si quieres, un rango de fechas.',
+            ),
+            _StepData(
+              title: 'Elegir alcance',
+              description: 'Selecciona una de las opciones:\n'
+                  '• Todos: todos los registros accesibles\n'
+                  '• Mis registros: solo los tuyos (requiere sesión)\n'
+                  '• Por expedición: una salida específica',
+              visual: _buildMockExportScopeChips(),
+            ),
+            _StepData(
+              title: 'Filtrar fechas (opcional)',
+              description: 'Define "Desde" y "Hasta" para acotar por fecha '
+                  'de registro. Si no eliges fechas, se exportan todos '
+                  'los del alcance seleccionado.',
+            ),
+            _StepData(
+              title: 'Generar y compartir',
+              description: 'Presiona "Generar Excel". La app crea el archivo '
+                  'y abre el diálogo de compartir para guardarlo o enviarlo '
+                  '(Drive, correo, etc.).',
+              visual: _buildMockButton(
+                label: 'Generar Excel',
+                icon: Icons.file_download_outlined,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+        _buildGuideSection(
+          title: 'Exportar desde una Expedición',
+          icon: PhosphorIconsRegular.mountains,
+          color: AppColors.semilleroSkyBlue,
+          body: 'Atajo rápido: exporta todos los registros de esa '
+              'expedición sin configurar filtros extra.',
+        ),
+        const SizedBox(height: 16),
+        _buildStepByStep(
+          accentColor: AppColors.semilleroSkyBlue,
+          steps: [
+            _StepData(
+              title: 'Abrir detalle de expedición',
+              description: 'Entra a la expedición desde la pestaña '
+                  'Expediciones.',
+            ),
+            _StepData(
+              title: 'Exportar registros',
+              description: 'Toca el botón "Exportar registros". El archivo '
+                  'usará el prefijo de la expedición en el nombre.',
+              visual: _buildMockButton(
+                label: 'Exportar registros',
+                icon: Icons.file_download_outlined,
+                color: AppColors.cloudWhite,
+                textColor: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        _buildInfoItem(
+          icon: PhosphorIconsRegular.wifiHigh,
+          title: 'Requiere conexión',
+          description: 'La exportación consulta los datos en el servidor. '
+              'Asegúrate de tener internet y de haber sincronizado antes '
+              'los registros tomados en campo.',
+        ),
+        const SizedBox(height: 12),
+        _buildInfoItem(
+          icon: PhosphorIconsRegular.shareNetwork,
+          title: 'Compartir archivo',
+          description: 'Al terminar, el sistema te permite guardar el .xlsx '
+              'en el dispositivo o enviarlo a otra aplicación.',
+        ),
+        const SizedBox(height: 12),
+        _buildInfoItem(
+          icon: PhosphorIconsRegular.warning,
+          title: 'Sin datos en el filtro',
+          description: 'Si no hay registros que coincidan, verás un mensaje '
+              'de error. Prueba ampliar el rango de fechas o cambiar el alcance.',
         ),
       ],
     );
@@ -1221,6 +1368,85 @@ class _UserManualScreenState extends State<UserManualScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  // ── Mock export settings tile (decorative) ──
+
+  Widget _buildMockExportSettingsTile() {
+    return Container(
+      decoration: AppStyles.card,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Exportar datos',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Excel personalizado (alcance y fechas)',
+                    style: AppStyles.caption,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              PhosphorIconsRegular.fileXls,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Mock export scope chips (decorative) ──
+
+  Widget _buildMockExportScopeChips() {
+    final scopes = [
+      ('Todos', true),
+      ('Mis registros', false),
+      ('Por expedición', false),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final (label, selected) in scopes)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.primary : AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: selected
+                    ? AppColors.primary
+                    : AppColors.textSecondary.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
