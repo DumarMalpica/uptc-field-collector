@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:field_colector/domain/ports/locator_provider.dart';
+import 'package:field_colector/features/dashboard/widgets/field_mode_overlay.dart';
 import 'package:field_colector/features/dashboard/widgets/field_registration_panel.dart';
 import 'package:field_colector/features/dashboard/widgets/map_right_slidebar_layer.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
@@ -281,7 +282,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     final bottom = MediaQuery.paddingOf(context).bottom + 8;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final fieldMode = context.watch<FieldSessionProvider>().fieldModeActive;
+    final fieldSession = context.watch<FieldSessionProvider>();
+    final fieldMode = fieldSession.fieldModeActive;
 
     return PopScope(
       canPop: false,
@@ -303,23 +305,22 @@ class _DashboardScreenState extends State<DashboardScreen>
               onUserPositionChanged: nearby.updatePosition,
               showRecordLegend: true,
               offlineMapDataHint: !nearby.isOnline,
-              legendBottomInset: fieldMode ? bottom + 52 : 12,
+              legendBottomInset: fieldMode ? bottom + 72 : 12,
               activeModuleFilters: nearby.activeModuleFilters,
               onModuleFilterToggled: nearby.toggleModuleFilter,
               focusNotifier: _mapFocusNotifier,
+              onMapRefresh: () => unawaited(nearby.refresh()),
+              mapRefreshing: nearby.isRefreshing,
             ),
           ),
 
           if (fieldMode)
-            Positioned(
-              left: 12,
-              bottom: bottom,
-              child: FilledButton.tonalIcon(
-                onPressed: () =>
-                    _selectSection(SidebarSection.fieldRegistration),
-                icon: const Icon(Icons.edit_note, size: 20),
-                label: const Text('Registro'),
-              ),
+            FieldModeOverlay(
+              fieldSession: fieldSession,
+              topInset: top,
+              bottomInset: bottom,
+              onRegistrationTap: () =>
+                  _selectSection(SidebarSection.fieldRegistration),
             ),
 
           ListenableBuilder(

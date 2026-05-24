@@ -62,6 +62,33 @@ class ExpeditionSyncService {
     }
   }
 
+  /// Descarga una expedición concreta desde Firestore (detalle / pull-to-refresh).
+  Future<bool> syncOutingById(String outingId) async {
+    if (outingId.isEmpty) {
+      debugPrint('[ExpeditionSync] outingId empty, skipping');
+      return false;
+    }
+    if (!await _reachability.hasConnectivityNow()) {
+      debugPrint('[ExpeditionSync] offline, skipping');
+      return false;
+    }
+
+    try {
+      final remote = await _outingRemote.getOutingById(outingId);
+      if (remote == null) return false;
+      return await _upsertRemoteOuting(remote);
+    } catch (e, stack) {
+      debugPrint('[ExpeditionSync] syncOutingById ERROR: $e');
+      developer.log(
+        'ExpeditionSyncService.syncOutingById failed',
+        name: 'ExpeditionSync',
+        error: e,
+        stackTrace: stack,
+      );
+      return false;
+    }
+  }
+
   Future<int> _doSync(String userId) async {
     final remoteOutings = <String, Outing>{};
 

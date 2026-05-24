@@ -1,4 +1,6 @@
+import 'package:field_colector/core/services/record_sync_service.dart';
 import 'package:field_colector/core/services/user_cache_service.dart';
+import 'package:field_colector/features/map/providers/nearby_records_provider.dart';
 import 'package:field_colector/domain/outing_member_display.dart';
 import 'package:field_colector/domain/ports/bird_record_local_port.dart';
 import 'package:field_colector/domain/ports/rock_record_local_port.dart';
@@ -11,6 +13,8 @@ import 'package:field_colector/features/records/screens/record_detail_screen.dar
 import 'package:latlong2/latlong.dart';
 import 'package:field_colector/features/records/widgets/sync_badge.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -45,13 +49,25 @@ class _RecordListScreenState extends State<RecordListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadRecords());
   }
 
-  Future<void> _loadRecords() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _loadRecords({bool forceRemoteSync = false}) async {
+    if (_entries.isEmpty) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
+      if (forceRemoteSync) {
+        try {
+          await context
+              .read<RecordSyncService>()
+              .syncRecordsForOuting(widget.outingId);
+          if (mounted) {
+            unawaited(context.read<NearbyRecordsProvider>().refresh());
+          }
+        } catch (_) {}
+      }
       final bird = context.read<BirdRecordLocalPort>();
       final rock = context.read<RockRecordLocalPort>();
       final soil = context.read<SoilRecordLocalPort>();
@@ -111,7 +127,10 @@ class _RecordListScreenState extends State<RecordListScreen> {
     if (_selected != null) {
       return RecordDetailScreen(
         item: _selected!,
-        onBack: () => setState(() => _selected = null),
+        onBack: () {
+          setState(() => _selected = null);
+          unawaited(_loadRecords());
+        },
         onNavigateToLocation: widget.onNavigateToLocation,
       );
     }
@@ -166,14 +185,26 @@ class _RecordListScreenState extends State<RecordListScreen> {
                         ),
                       ),
                     )
-                  : _entries.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Sin registros en esta expedición',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        )
-                      : ListView.separated(
+                  : RefreshIndicator(
+                      onRefresh: () =>
+                          _loadRecords(forceRemoteSync: true),
+                      child: _entries.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: const [
+                                SizedBox(height: 120),
+                                Center(
+                                  child: Text(
+                                    'Sin registros en esta expedición',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(16),
                           itemCount: _entries.length,
                           separatorBuilder: (_, __) =>
@@ -275,6 +306,7 @@ class _RecordListScreenState extends State<RecordListScreen> {
                             );
                           },
                         ),
+                    ),
         ),
       ],
     );

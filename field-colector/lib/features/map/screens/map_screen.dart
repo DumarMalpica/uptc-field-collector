@@ -45,6 +45,8 @@ class MapScreen extends StatefulWidget {
     this.activeModuleFilters = const {},
     this.onModuleFilterToggled,
     this.focusNotifier,
+    this.onMapRefresh,
+    this.mapRefreshing = false,
   });
 
   /// Misma instancia que el resto de la app (no se recrea al push).
@@ -81,6 +83,9 @@ class MapScreen extends StatefulWidget {
 
   /// Notificador externo: al cambiar valor, la cámara se mueve a esa posición.
   final ValueNotifier<LatLng?>? focusNotifier;
+
+  final VoidCallback? onMapRefresh;
+  final bool mapRefreshing;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -472,6 +477,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                       activeFilters: widget.activeModuleFilters,
                       onFilterToggled: widget.onModuleFilterToggled ?? (_) {},
                       showOfflineHint: widget.offlineMapDataHint,
+                      onRefresh: widget.onMapRefresh,
+                      isRefreshing: widget.mapRefreshing,
                     ),
                   ),
                 if (widget.enableLiveGps)

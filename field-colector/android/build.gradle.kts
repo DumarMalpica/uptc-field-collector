@@ -23,6 +23,25 @@ subprojects {
 subprojects {
     afterEvaluate {
         val androidExt = extensions.findByName("android") ?: return@afterEvaluate
+
+        // isar_flutter_libs 3.1.0+1 ships compileSdk 30; Material attrs need 31+
+        runCatching {
+            val setCompileSdk =
+                androidExt.javaClass.methods.find {
+                    it.name == "setCompileSdk" && it.parameterCount == 1
+                }
+            if (setCompileSdk != null) {
+                when (setCompileSdk.parameterTypes[0].name) {
+                    "java.lang.String" -> setCompileSdk.invoke(androidExt, "android-36")
+                    else -> setCompileSdk.invoke(androidExt, 36)
+                }
+            } else {
+                androidExt.javaClass
+                    .getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
+                    .invoke(androidExt, 36)
+            }
+        }
+
         val getNs =
             androidExt.javaClass.methods.find { it.name == "getNamespace" }
                 ?: return@afterEvaluate

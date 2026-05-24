@@ -37,6 +37,7 @@ class SyncService implements SyncPort {
   final PhotoLocalPort _photoLocalPort;
 
   final _progressController = StreamController<SyncProgress>.broadcast();
+  Completer<SyncResult>? _activeSyncCompleter;
 
   SyncService({
     required OutingLocalPort outingLocalPort,
@@ -104,6 +105,24 @@ class SyncService implements SyncPort {
 
   @override
   Future<SyncResult> syncPendingData() async {
+    if (_activeSyncCompleter != null) {
+      return _activeSyncCompleter!.future;
+    }
+    _activeSyncCompleter = Completer<SyncResult>();
+    try {
+      final result = await _doSyncPendingData();
+      _activeSyncCompleter!.complete(result);
+      return result;
+    } catch (e) {
+      final fallback = SyncResult(synced: 0, failed: 0, errors: [e.toString()]);
+      _activeSyncCompleter!.complete(fallback);
+      return fallback;
+    } finally {
+      _activeSyncCompleter = null;
+    }
+  }
+
+  Future<SyncResult> _doSyncPendingData() async {
     int synced = 0;
     int failed = 0;
     final errors = <String>[];

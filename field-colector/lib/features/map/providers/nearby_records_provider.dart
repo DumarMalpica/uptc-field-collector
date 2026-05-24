@@ -95,9 +95,11 @@ class NearbyRecordsProvider extends ChangeNotifier {
   StreamSubscription<bool>? _connSub;
   bool _started = false;
   bool _globalRemoteFetchInFlight = false;
+  bool _isRefreshing = false;
 
   List<MapRecordPin> get nearbyPins => _nearbyPins;
   bool get isOnline => _online;
+  bool get isRefreshing => _isRefreshing;
   Set<String> get activeModuleFilters => Set.unmodifiable(_activeModuleFilters);
 
   void start() {
@@ -300,8 +302,21 @@ class NearbyRecordsProvider extends ChangeNotifier {
     }
   }
 
+  /// Recarga local + remoto si hay red (pull manual o tras guardar).
+  Future<void> refresh() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+    notifyListeners();
+    try {
+      await _reloadLocalAndRebuild();
+    } finally {
+      _isRefreshing = false;
+      notifyListeners();
+    }
+  }
+
   /// Tras guardar registro local (mapa sin esperar movimiento GPS).
-  Future<void> refreshLocal() => _reloadLocalAndRebuild();
+  Future<void> refreshLocal() => refresh();
 
   Future<void> _reloadLocalAndRebuild() async {
     _recordsById.clear();
