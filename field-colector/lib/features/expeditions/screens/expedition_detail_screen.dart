@@ -5,9 +5,12 @@ import 'package:field_colector/domain/outing_member_display.dart';
 import 'package:field_colector/domain/ports/outing_local_port.dart';
 import 'package:field_colector/domain/ports/outing_remote_port.dart';
 import 'package:field_colector/features/records/screens/record_list_screen.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:field_colector/features/map/download/map_tile_download_flow.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
+import 'package:field_colector/features/utilities/widgets/detail_field.dart';
+import 'package:field_colector/features/utilities/widgets/detail_section_title.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:flutter/material.dart';
@@ -24,10 +27,12 @@ class ExpeditionDetailScreen extends StatefulWidget {
     super.key,
     required this.outing,
     required this.onBack,
+    this.onNavigateToLocation,
   });
 
   final Outing outing;
   final VoidCallback onBack;
+  final ValueChanged<LatLng>? onNavigateToLocation;
 
   @override
   State<ExpeditionDetailScreen> createState() => _ExpeditionDetailScreenState();
@@ -300,6 +305,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
       return RecordListScreen(
         outingId: _outing.id,
         onBack: () => setState(() => _showRecordList = false),
+        onNavigateToLocation: widget.onNavigateToLocation,
       );
     }
 
@@ -346,7 +352,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               // ── Director ──
-              _SectionTitle('Director de expedición'),
+              DetailSectionTitle('Director de expedición'),
               const SizedBox(height: 4),
               _InfoRow(
                 icon: Icons.person,
@@ -356,44 +362,44 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               const SizedBox(height: 16),
 
               // ── General info ──
-              _SectionTitle('Información general'),
+              DetailSectionTitle('Información general'),
               const SizedBox(height: 8),
-              _DetailField(label: 'Prefijo', value: _outing.prefix),
-              _DetailField(label: 'Ubicación', value: _outing.location),
-              _DetailField(label: 'Zona', value: _outing.zone),
-              _DetailField(label: 'Razón', value: _outing.reason),
-              _DetailField(
+              DetailField(label: 'Prefijo', value: _outing.prefix),
+              DetailField(label: 'Ubicación', value: _outing.location),
+              DetailField(label: 'Zona', value: _outing.zone),
+              DetailField(label: 'Razón', value: _outing.reason),
+              DetailField(
                 label: 'Latitud',
                 value: _outing.latitude.toStringAsFixed(4),
               ),
-              _DetailField(
+              DetailField(
                 label: 'Longitud',
                 value: _outing.longitude.toStringAsFixed(4),
               ),
-              _DetailField(
+              DetailField(
                 label: 'Altitud',
                 value: '${_outing.altitude.toStringAsFixed(0)} m',
               ),
-              _DetailField(
+              DetailField(
                 label: 'Fecha inicio',
                 value: dateFormat.format(_outing.startDate),
               ),
-              _DetailField(
+              DetailField(
                 label: 'Fecha fin',
                 value: dateFormat.format(_outing.endDate),
               ),
-              _DetailField(
+              DetailField(
                 label: 'Estado',
                 value: _outingStatusLabel(_outing.status),
               ),
-              _DetailField(
+              DetailField(
                 label: 'Sincronización',
                 value: _syncStatusLabel(_outing.syncStatus),
               ),
               const SizedBox(height: 16),
 
               // ── Participants ──
-              _SectionTitle(
+              DetailSectionTitle(
                 'Participantes (${_outing.participantIds.length})',
               ),
               const SizedBox(height: 8),
@@ -409,7 +415,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
               const SizedBox(height: 16),
 
               // ── Pending users ──
-              _SectionTitle(
+              DetailSectionTitle(
                 'Solicitantes (${_outing.pendingUsers.length})',
               ),
               const SizedBox(height: 8),
@@ -530,62 +536,6 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
 }
 
 // ── Helper widgets ──────────────────────────────────────────────────────────
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title);
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: AppColors.primaryDark,
-        letterSpacing: 0.3,
-      ),
-    );
-  }
-}
-
-class _DetailField extends StatelessWidget {
-  const _DetailField({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
