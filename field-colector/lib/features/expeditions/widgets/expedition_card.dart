@@ -6,8 +6,9 @@ import 'package:intl/intl.dart';
 /// Tarjeta de expedición reutilizable.
 ///
 /// Muestra datos principales del [Outing]. Un checkbox en la esquina superior
-/// derecha controla la selección. Cuando está seleccionada, aparece una
-/// banderita fijada en la parte inferior de la tarjeta.
+/// derecha controla la selección (UI; cache offline pendiente — ver TODO en
+/// [ExpeditionListScreen]). Cuando está seleccionada, aparece una banderita
+/// fijada en la parte inferior de la tarjeta.
 class ExpeditionCard extends StatelessWidget {
   const ExpeditionCard({
     super.key,
