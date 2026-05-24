@@ -9,11 +9,15 @@ class MapRecordLegend extends StatefulWidget {
     required this.activeFilters,
     required this.onFilterToggled,
     this.showOfflineHint = false,
+    this.onRefresh,
+    this.isRefreshing = false,
   });
 
   final Set<String> activeFilters;
   final ValueChanged<String> onFilterToggled;
   final bool showOfflineHint;
+  final VoidCallback? onRefresh;
+  final bool isRefreshing;
 
   @override
   State<MapRecordLegend> createState() => _MapRecordLegendState();
@@ -62,6 +66,30 @@ class _MapRecordLegendState extends State<MapRecordLegend> {
                     _expanded ? Icons.expand_less : Icons.expand_more,
                     size: 18,
                   ),
+                  if (widget.onRefresh != null) ...[
+                    const SizedBox(width: 2),
+                    IconButton(
+                      icon: widget.isRefreshing
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.primary,
+                              ),
+                            )
+                          : const Icon(Icons.refresh, size: 18),
+                      onPressed:
+                          widget.isRefreshing ? null : widget.onRefresh,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
+                      tooltip: 'Actualizar registros',
+                    ),
+                  ],
                 ],
               ),
             ),

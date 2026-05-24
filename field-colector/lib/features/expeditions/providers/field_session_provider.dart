@@ -10,6 +10,8 @@ class FieldSessionProvider extends ChangeNotifier {
 
   bool _fieldModeActive = false;
   String? _activeOutingId;
+  String? _activeOutingPrefix;
+  String? _activeOutingName;
   int _enterFieldEpoch = 0;
   bool _pendingDashboardHome = false;
 
@@ -17,6 +19,10 @@ class FieldSessionProvider extends ChangeNotifier {
 
   /// Expedición activa al pulsar "En campo"; usada al guardar registros.
   String? get activeOutingId => _activeOutingId;
+
+  String? get activeOutingPrefix => _activeOutingPrefix;
+
+  String? get activeOutingName => _activeOutingName;
 
   /// Se incrementa en cada `enterFieldMode()` para que listas/detalle reseteen.
   int get enterFieldEpoch => _enterFieldEpoch;
@@ -33,6 +39,8 @@ class FieldSessionProvider extends ChangeNotifier {
 
     _fieldModeActive = true;
     _activeOutingId = outingId;
+    _activeOutingPrefix = outing.prefix;
+    _activeOutingName = outing.name;
     _enterFieldEpoch++;
     _pendingDashboardHome = true;
     notifyListeners();
@@ -42,6 +50,8 @@ class FieldSessionProvider extends ChangeNotifier {
   void exitFieldMode() {
     _fieldModeActive = false;
     _activeOutingId = null;
+    _activeOutingPrefix = null;
+    _activeOutingName = null;
     notifyListeners();
   }
 

@@ -1,3 +1,4 @@
+import 'package:field_colector/core/services/expedition_sync_service.dart';
 import 'package:field_colector/core/services/user_cache_service.dart';
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/domain/entities/user.dart';
@@ -54,7 +55,15 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshOuting());
   }
 
-  Future<void> _refreshOuting() async {
+  Future<void> _refreshOuting({bool forceRemoteSync = false}) async {
+    if (forceRemoteSync) {
+      try {
+        await context
+            .read<ExpeditionSyncService>()
+            .syncOutingById(_outing.id);
+      } catch (_) {}
+    }
+
     final fresh =
         await context.read<OutingLocalPort>().getOutingById(_outing.id);
     if (fresh == null || !mounted) return;
@@ -369,9 +378,12 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
 
         // ── Scrollable content ──
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+          child: RefreshIndicator(
+            onRefresh: () => _refreshOuting(forceRemoteSync: true),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
               // ── Director ──
               DetailSectionTitle('Director de expedición'),
               const SizedBox(height: 4),
@@ -469,6 +481,7 @@ class _ExpeditionDetailScreenState extends State<ExpeditionDetailScreen> {
 
               const SizedBox(height: 24),
             ],
+            ),
           ),
         ),
 
