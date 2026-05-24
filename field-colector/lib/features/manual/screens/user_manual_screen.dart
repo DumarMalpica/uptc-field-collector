@@ -122,8 +122,8 @@ class _UserManualScreenState extends State<UserManualScreen> {
                   top: topPosition,
                   left: 8,
                   right: 8,
-                  bottom: index <= _selectedIndex ? (isSelected ? 0 : null) : 0,
-                  height: isSelected ? (screenHeight - (_selectedIndex * tabHeight)) : (index <= _selectedIndex ? tabHeight + 24 : null),
+                  bottom: isSelected ? 0 : (index > _selectedIndex ? 0 : null),
+                  height: !isSelected && index <= _selectedIndex ? tabHeight + 24 : null,
                   child: GestureDetector(
                     onTap: () {
                       setState(() {
@@ -148,38 +148,39 @@ class _UserManualScreenState extends State<UserManualScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Tab Header
                           SizedBox(
                             height: tabHeight,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  card.icon,
-                                  color: card.textColor,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    card.title.toUpperCase(),
-                                    style: AppStyles.subtitle.copyWith(
-                                      color: card.textColor,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                      letterSpacing: 1.5,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    card.icon,
+                                    color: card.textColor,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      card.title.toUpperCase(),
+                                      style: AppStyles.subtitle.copyWith(
+                                        color: card.textColor,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        letterSpacing: 1.5,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                if (!isSelected)
-                                  Icon(
-                                    index < _selectedIndex
-                                        ? Icons.keyboard_arrow_up
-                                        : Icons.keyboard_arrow_down,
-                                    color: card.textColor.withValues(alpha: 0.6),
-                                    size: 20,
-                                  ),
-                              ],
+                                  if (!isSelected)
+                                    Icon(
+                                      index < _selectedIndex
+                                          ? Icons.keyboard_arrow_up
+                                          : Icons.keyboard_arrow_down,
+                                      color: card.textColor.withValues(alpha: 0.6),
+                                      size: 20,
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -235,8 +236,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
         const SizedBox(height: 12),
         const Text(
           'Esta aplicación es una herramienta de recolección de datos georreferenciados '
-          'diseñada para funcionar incluso en las condiciones de conectividad más '
-          'desafiantes (Offline-First).',
+          'diseñada para funcionar incluso sin conexión a internet.',
           style: AppStyles.body,
         ),
         const SizedBox(height: 24),
@@ -251,10 +251,10 @@ class _UserManualScreenState extends State<UserManualScreen> {
         const SizedBox(height: 20),
         _buildInfoItem(
           icon: PhosphorIconsRegular.wifiSlash,
-          title: 'Funcionamiento Offline-First',
-          description: 'Los registros tomados en campo se guardan localmente en tu '
-              'dispositivo de manera segura. Al recuperar la conectividad, se sincronizan '
-              'automáticamente con los servidores de Firestore.',
+          title: 'Funciona sin internet',
+          description: 'Los registros tomados en campo se guardan de forma segura en tu '
+              'dispositivo. Al recuperar la conexión, se envían automáticamente '
+              'al servidor.',
         ),
         const SizedBox(height: 12),
         _buildInfoItem(
@@ -303,8 +303,8 @@ class _UserManualScreenState extends State<UserManualScreen> {
         const SizedBox(height: 12),
         _buildInfoItem(
           icon: PhosphorIconsRegular.database,
-          title: 'Mapas Offline cached',
-          description: 'Puedes configurar y descargar previamente las teselas de mapas '
+          title: 'Mapas descargados',
+          description: 'Puedes descargar previamente los mapas de la zona '
               'para visualizarlos sin señal de internet.',
         ),
       ],
@@ -325,30 +325,114 @@ class _UserManualScreenState extends State<UserManualScreen> {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Las expediciones organizan las salidas de campo para los miembros autorizados, permitiendo una toma de datos coordinada.',
+          'Las expediciones organizan las salidas de campo para los miembros '
+          'autorizados, permitiendo una toma de datos coordinada.',
           style: AppStyles.body,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
+
+        // ── Crear expedición ──
         _buildGuideSection(
-          title: 'Salida de Campo & Sincronización',
-          icon: PhosphorIconsRegular.mountains,
+          title: 'Crear una Expedición',
+          icon: PhosphorIconsRegular.plusCircle,
           color: AppColors.semilleroLightGreen,
-          body: 'Al iniciar sesión, la app detecta tus salidas y descarga automáticamente '
-              'el listado de miembros y detalles para habilitar la recolección local.',
+          body: 'Si eres coordinador o investigador, puedes crear una nueva '
+              'expedición directamente desde la aplicación.',
         ),
-        const SizedBox(height: 20),
-        _buildInfoItem(
-          icon: PhosphorIconsRegular.usersThree,
+        const SizedBox(height: 16),
+        _buildStepByStep(
+          accentColor: AppColors.semilleroLightGreen,
+          steps: [
+            _StepData(
+              title: 'Abrir pestaña de Expediciones',
+              description: 'Desde el panel lateral, entra en la sección '
+                  'Expediciones. Verás una barra de búsqueda y un botón "+" '
+                  'para crear.',
+            ),
+            _StepData(
+              title: 'Llenar información general',
+              description: 'Completa los campos obligatorios: Prefijo (ej. '
+                  'EXP-BOY), Nombre, Ubicación, Zona y Razón de la salida.',
+              visual: _buildMockCreateFormFields(),
+            ),
+            _StepData(
+              title: 'Seleccionar fechas',
+              description: 'Elige la fecha de inicio y de fin de la expedición '
+                  'usando los selectores de calendario.',
+            ),
+            _StepData(
+              title: 'Marcar ubicación en mapa',
+              description: 'Toca "Seleccionar en mapa" para abrir el mapa '
+                  'embebido y fijar las coordenadas exactas (latitud, longitud '
+                  'y altitud) del punto de referencia.',
+            ),
+            _StepData(
+              title: 'Crear expedición',
+              description: 'Al presionar el botón, se guarda en tu '
+                  'dispositivo y se envía al servidor si hay conexión.',
+              visual: _buildMockButton(
+                label: 'Crear expedición',
+                icon: Icons.add_circle_outline,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+
+        // ── Unirse a expedición ──
+        _buildGuideSection(
           title: 'Unirse a una Expedición',
-          description: 'Busca expediciones activas creadas por coordinadores de Citesa y '
-              'solicita unirte directamente desde el listado en la aplicación.',
+          icon: PhosphorIconsRegular.usersThree,
+          color: AppColors.semilleroLightGreen,
+          body: 'Si no eres el creador, puedes solicitar unirte a una '
+              'expedición existente.',
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        _buildStepByStep(
+          accentColor: AppColors.semilleroLightGreen,
+          steps: [
+            _StepData(
+              title: 'Buscar expedición',
+              description: 'Usa la barra de búsqueda para encontrar la '
+                  'expedición por nombre, prefijo o ubicación.',
+            ),
+            _StepData(
+              title: 'Abrir detalle',
+              description: 'Toca la tarjeta de la expedición para ver su '
+                  'información completa: director, participantes y fechas.',
+              visual: _buildMockExpeditionCard(),
+            ),
+            _StepData(
+              title: 'Solicitar unirse',
+              description: 'Presiona "Solicitar unirse". Tu solicitud '
+                  'quedará pendiente hasta que el director la apruebe.',
+              visual: _buildMockButton(
+                label: 'Solicitar unirse',
+                icon: Icons.person_add,
+                color: AppColors.primary,
+              ),
+            ),
+            _StepData(
+              title: 'Activar modo "En campo"',
+              description: 'Una vez aprobado, el botón "En campo" se habilita. '
+                  'Actívalo para comenzar a tomar registros vinculados a la '
+                  'expedición.',
+              visual: _buildMockButton(
+                label: 'En campo',
+                icon: Icons.explore,
+                color: AppColors.accent,
+                textColor: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
         _buildInfoItem(
           icon: PhosphorIconsRegular.shieldCheck,
           title: 'Permisos de Registro',
-          description: 'Solo podrás subir registros vinculados a una expedición activa de la '
-              'que seas participante registrado.',
+          description: 'Solo podrás subir registros vinculados a una '
+              'expedición activa de la que seas participante registrado.',
         ),
       ],
     );
@@ -368,10 +452,93 @@ class _UserManualScreenState extends State<UserManualScreen> {
         ),
         const SizedBox(height: 12),
         const Text(
-          'El corazón del colector. La app cuenta con 6 módulos especializados para recolectar datos estructurados y enriquecidos.',
+          'El corazón del colector. La app cuenta con 6 módulos especializados '
+          'para recolectar datos estructurados y enriquecidos.',
           style: AppStyles.body,
         ),
         const SizedBox(height: 20),
+
+        // ── Prerequisito ──
+        _buildGuideSection(
+          title: '⚠ Requisito previo: Expedición activa',
+          icon: PhosphorIconsRegular.warning,
+          color: AppColors.accent,
+          body: 'Para crear un registro, primero debes estar en modo '
+              '"En campo" dentro de una expedición activa. Si no tienes '
+              'expedición, ve a la sección Expediciones para crear una o '
+              'solicitar unirte.',
+        ),
+        const SizedBox(height: 24),
+
+        // ── Step-by-step ──
+        _buildGuideSection(
+          title: 'Crear un Registro',
+          icon: PhosphorIconsRegular.notePencil,
+          color: AppColors.semilleroViolet,
+          body: 'Sigue estos pasos para tomar un registro de campo completo:',
+        ),
+        const SizedBox(height: 16),
+        _buildStepByStep(
+          accentColor: AppColors.semilleroViolet,
+          steps: [
+            _StepData(
+              title: 'Activar "En campo"',
+              description: 'Desde el detalle de tu expedición, presiona '
+                  '"En campo" para vincular tus registros a esa salida.',
+            ),
+            _StepData(
+              title: 'Abrir panel de formularios',
+              description: 'En el panel lateral derecho del mapa, accede a '
+                  '"Formularios de registro". Verás las categorías disponibles.',
+            ),
+            _StepData(
+              title: 'Seleccionar categoría',
+              description: 'Elige entre las categorías usando los chips '
+                  'de filtro:',
+              visual: _buildMockCategoryChips(),
+            ),
+            _StepData(
+              title: 'Elegir formulario',
+              description: 'Selecciona el formulario específico del módulo '
+                  'que necesitas. Un punto amarillo indica borrador existente.',
+              visual: Column(
+                children: [
+                  _buildMockFormCatalogItem(
+                    title: 'Registro de Aves y Hábitat',
+                    formId: 'modulo_aves',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildMockFormCatalogItem(
+                    title: 'Registro de Vegetación',
+                    formId: 'modulo_vegetacion',
+                    hasDraft: true,
+                  ),
+                ],
+              ),
+            ),
+            _StepData(
+              title: 'Llenar el formulario',
+              description: 'El formulario tiene dos secciones:\n'
+                  '• Datos comunes: municipio, departamento, coordenadas GPS '
+                  '(se capturan automáticamente), fotos\n'
+                  '• Módulo específico: campos científicos del tipo de registro',
+            ),
+            _StepData(
+              title: 'Guardar registro',
+              description: 'Presiona "Guardar registro". Se almacena '
+                  'en tu dispositivo y se envía automáticamente al '
+                  'servidor cuando haya conexión.',
+              visual: _buildMockButton(
+                label: 'Guardar registro',
+                icon: Icons.save_outlined,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // ── 6 módulos ──
         _buildGuideSection(
           title: 'Los 6 Módulos Especializados',
           icon: PhosphorIconsRegular.tree,
@@ -387,15 +554,17 @@ class _UserManualScreenState extends State<UserManualScreen> {
         _buildInfoItem(
           icon: PhosphorIconsRegular.floppyDisk,
           title: 'Autoguardado de Borradores',
-          description: 'Si sales de un formulario a medio llenar, la aplicación guardará '
-              'un borrador localmente en Isar de forma segura para que no pierdas nada.',
+          description: 'Si sales de un formulario a medio llenar, la '
+              'aplicación guardará un borrador de forma segura para que '
+              'no pierdas nada.',
         ),
         const SizedBox(height: 12),
         _buildInfoItem(
           icon: PhosphorIconsRegular.camera,
           title: 'Captura Fotográfica',
-          description: 'Toma fotos directamente de la especie o zona de estudio. Las '
-              'imágenes se vinculan localmente y se suben al servidor en background.',
+          description: 'Toma fotos directamente de la especie o zona de '
+              'estudio. Las imágenes se guardan y se suben al servidor '
+              'de forma automática.',
         ),
       ],
     );
@@ -415,30 +584,115 @@ class _UserManualScreenState extends State<UserManualScreen> {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Ajusta el comportamiento de geolocalización, sincronización y memoria local de tu dispositivo.',
+          'Ajusta el comportamiento de geolocalización, sincronización y '
+          'memoria local de tu dispositivo. A continuación se muestran las '
+          'configuraciones más importantes:',
           style: AppStyles.body,
         ),
-        const SizedBox(height: 20),
-        _buildGuideSection(
-          title: 'Rendimiento y GPS',
-          icon: PhosphorIconsRegular.sliders,
-          color: AppColors.semilleroMagenta,
-          body: '• Precisión GPS: Nivel de exactitud del sensor GPS. Mayor precisión aumenta el consumo de batería.\n'
-              '• Formato: Elige ver coordenadas en formato decimal o grados-minutos-segundos.',
+        const SizedBox(height: 24),
+
+        // ── GPS y ubicación ──
+        _buildMockSettingsGroup(
+          title: 'GPS y ubicación',
+          icon: PhosphorIconsRegular.crosshair,
+          children: [
+            _buildMockSettingsTile(
+              title: 'Precisión GPS',
+              subtitle: 'Mayor precisión consume más batería',
+              value: 'Media',
+            ),
+            _buildMockSettingsTile(
+              title: 'Intervalo de actualización',
+              subtitle: 'Frecuencia del seguimiento en mapa',
+              value: '22 s',
+            ),
+            _buildMockSettingsTile(
+              title: 'Formato de coordenadas',
+              value: 'Decimal',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildSettingsExplanation(
+          'La precisión GPS determina la exactitud de las coordenadas. '
+          'En alta precisión, el consumo de batería aumenta. '
+          'El formato puede ser Decimal (5.5353) o '
+          'Grados-Minutos-Segundos (5°32\'7.1"N).',
         ),
         const SizedBox(height: 20),
-        _buildInfoItem(
-          icon: PhosphorIconsRegular.trash,
-          title: 'Mantenimiento de Memoria',
-          description: 'Puedes borrar el caché de mapas para liberar espacio, o '
-              'eliminar manualmente todos tus borradores locales guardados.',
+
+        // ── Mapa ──
+        _buildMockSettingsGroup(
+          title: 'Mapa',
+          icon: PhosphorIconsRegular.mapTrifold,
+          children: [
+            _buildMockSettingsTile(
+              title: 'Zoom inicial',
+              value: '15',
+            ),
+            _buildMockSettingsTile(
+              title: 'Mostrar mi ubicación',
+              toggleValue: true,
+            ),
+            _buildMockSettingsTile(
+              title: 'Tipo de mapa',
+              subtitle: 'Capa base cuando hay conexión',
+              value: 'Estándar',
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        _buildInfoItem(
-          icon: PhosphorIconsRegular.arrowClockwise,
-          title: 'Sincronización Manual',
-          description: 'Fuerza la subida inmediata de todas tus fotos y registros locales '
-              'pendientes cuando tengas una conexión a internet estable.',
+        const SizedBox(height: 8),
+        _buildSettingsExplanation(
+          'El zoom inicial controla qué tan cercano o lejano se ve el mapa '
+          'al abrir la app. "Mostrar mi ubicación" activa el punto azul '
+          'GPS en tiempo real.',
+        ),
+        const SizedBox(height: 20),
+
+        // ── Datos ──
+        _buildMockSettingsGroup(
+          title: 'Datos',
+          icon: PhosphorIconsRegular.cloudArrowUp,
+          children: [
+            _buildMockSettingsTile(
+              title: 'Sincronizar ahora',
+              subtitle: 'Todo sincronizado',
+              isAction: true,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildSettingsExplanation(
+          'Fuerza la subida inmediata de registros, expediciones y fotos '
+          'pendientes. Útil cuando acabas de recuperar señal de internet.',
+        ),
+        const SizedBox(height: 20),
+
+        // ── Almacenamiento ──
+        _buildMockSettingsGroup(
+          title: 'Almacenamiento',
+          icon: PhosphorIconsRegular.hardDrives,
+          children: [
+            _buildMockSettingsTile(
+              title: 'Uso local',
+              subtitle: '12.4 MB',
+            ),
+            _buildMockSettingsTile(
+              title: 'Borrar mapas descargados',
+              subtitle: 'Mapas guardados para uso sin internet',
+              isAction: true,
+            ),
+            _buildMockSettingsTile(
+              title: 'Borrar borradores de formularios',
+              isAction: true,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildSettingsExplanation(
+          'Libera espacio en tu dispositivo eliminando mapas descargados '
+          'o borradores de formularios incompletos. Los registros ya '
+          'enviados al servidor no se ven afectados.',
         ),
       ],
     );
@@ -472,9 +726,9 @@ class _UserManualScreenState extends State<UserManualScreen> {
         const SizedBox(height: 20),
         _buildInfoItem(
           icon: PhosphorIconsRegular.key,
-          title: 'Sesiones Persistentes',
-          description: 'Tu sesión se mantiene iniciada de forma segura mediante un token local '
-              'encriptado. No requieres loguearte nuevamente al abrir la app.',
+          title: 'Sesión guardada',
+          description: 'Tu sesión se mantiene iniciada de forma segura. '
+              'No necesitas iniciar sesión cada vez que abras la app.',
         ),
         const SizedBox(height: 12),
         _buildInfoItem(
@@ -584,6 +838,445 @@ class _UserManualScreenState extends State<UserManualScreen> {
       ],
     );
   }
+
+  // ── Step-by-step tutorial builder ──
+
+  Widget _buildStepByStep({
+    required List<_StepData> steps,
+    required Color accentColor,
+  }) {
+    return Column(
+      children: [
+        for (var i = 0; i < steps.length; i++) ...[
+          if (i > 0) const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${i + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 5),
+                    Text(
+                      steps[i].title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      steps[i].description,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (steps[i].visual != null) ...[
+                      const SizedBox(height: 10),
+                      steps[i].visual!,
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Mock settings group (decorative) ──
+
+  Widget _buildMockSettingsGroup({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: AppStyles.card,
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Mock settings tile (decorative) ──
+
+  Widget _buildMockSettingsTile({
+    required String title,
+    String? subtitle,
+    String? value,
+    bool? toggleValue,
+    bool isAction = false,
+  }) {
+    Widget? control;
+    if (toggleValue != null) {
+      control = Switch.adaptive(value: toggleValue, onChanged: null);
+    } else if (value != null) {
+      control = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: AppStyles.caption.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+        ],
+      );
+    } else if (isAction) {
+      control = Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppStyles.caption),
+                ],
+              ],
+            ),
+          ),
+          ?control,
+        ],
+      ),
+    );
+  }
+
+  // ── Settings explanation text ──
+
+  Widget _buildSettingsExplanation(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.textSecondary,
+          height: 1.5,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+
+  // ── Mock expedition card (decorative) ──
+
+  Widget _buildMockExpeditionCard() {
+    return Container(
+      decoration: AppStyles.card,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'EXP-BOY',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 2),
+          const Text(
+            'Expedición Boyacá Centro',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              const Expanded(
+                child: Text(
+                  'Tunja, Boyacá · Altiplano Cundiboyacense',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              const Expanded(
+                child: Text(
+                  '01 Jun 2026 – 15 Jun 2026',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Sincronizada',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Mock form catalog item (decorative) ──
+
+  Widget _buildMockFormCatalogItem({
+    required String title,
+    required String formId,
+    bool hasDraft = false,
+  }) {
+    return Container(
+      decoration: AppStyles.card,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(PhosphorIconsRegular.fileText, color: AppColors.primary, size: 28),
+              if (hasDraft)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(formId, style: AppStyles.caption),
+              ],
+            ),
+          ),
+          Icon(PhosphorIconsRegular.caretRight, color: AppColors.textSecondary, size: 20),
+        ],
+      ),
+    );
+  }
+
+  // ── Mock button (decorative) ──
+
+  Widget _buildMockButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    Color textColor = Colors.white,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: textColor),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Mock create-form fields preview (decorative) ──
+
+  Widget _buildMockCreateFormFields() {
+    return Container(
+      decoration: AppStyles.card,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          for (final field in ['Prefijo *', 'Nombre *', 'Ubicación *', 'Zona *'])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, size: 16, color: AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Text(
+                      field,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Mock category chips (decorative) ──
+
+  Widget _buildMockCategoryChips() {
+    final categories = [
+      ('Geológicas', PhosphorIconsRegular.mountains, true),
+      ('Hídricas', PhosphorIconsRegular.dropHalf, false),
+      ('Biológicas', PhosphorIconsRegular.leaf, false),
+      ('Sociales', PhosphorIconsRegular.usersThree, false),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (label, icon, selected) in categories)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.primary : AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textSecondary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: selected ? Colors.white : AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        color: selected ? Colors.white : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ManualCardData {
@@ -602,4 +1295,12 @@ class _ManualCardData {
     required this.textColor,
     required this.content,
   });
+}
+
+class _StepData {
+  final String title;
+  final String description;
+  final Widget? visual;
+
+  _StepData({required this.title, required this.description, this.visual});
 }
