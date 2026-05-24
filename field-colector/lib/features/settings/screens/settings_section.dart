@@ -9,6 +9,7 @@ import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/export/providers/export_provider.dart';
 import 'package:field_colector/features/profile/providers/profile_provider.dart';
 import 'package:field_colector/features/settings/providers/settings_provider.dart';
+import 'package:field_colector/features/settings/widgets/about_acknowledgments_dialog.dart';
 import 'package:field_colector/features/settings/widgets/settings_group.dart';
 import 'package:field_colector/features/settings/widgets/settings_tile.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
@@ -514,6 +515,16 @@ class _SettingsSectionState extends State<SettingsSection> {
                   SettingsTile.info(
                     title: 'Versión',
                     subtitle: versionLabel,
+                  ),
+                  SettingsTile.action(
+                    title: 'Agradecimientos',
+                    subtitle: 'Participantes y equipo de desarrollo',
+                    trailing: Icon(
+                      PhosphorIconsRegular.heart,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    onTap: () => AboutAcknowledgmentsDialog.show(context),
                   ),
                 ],
               ),
