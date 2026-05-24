@@ -84,11 +84,13 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.primary,
       body: AnimatedBuilder(
         animation: _curveT,
         builder: (context, _) => Stack(
           children: [
-            _greenBackground(),
+            _formBackground(),
+            _beigeCurvedPanel(),
             _citesaShimmer(),
             _appName(),
             _welcomeContent(),
@@ -103,7 +105,22 @@ class _LoginScreenState extends State<LoginScreen>
 
   // ── Layers ─────────────────────────────────────────────
 
-  Widget _greenBackground() {
+  Widget _formBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.primary,
+            Color.lerp(AppColors.primary, AppColors.primaryDark, 0.25)!,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _beigeCurvedPanel() {
     return ClipPath(
       clipper: _CurveClipper(_curveT.value),
       child: Container(
@@ -112,8 +129,8 @@ class _LoginScreenState extends State<LoginScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.primary,
-              Color.lerp(AppColors.primary, AppColors.primaryDark, 0.25)!,
+              AppColors.authBeige,
+              Color.lerp(AppColors.authBeige, AppColors.accent, 0.12)!,
             ],
           ),
         ),
@@ -142,9 +159,9 @@ class _LoginScreenState extends State<LoginScreen>
                       begin: Alignment(dx - 0.3, 0),
                       end: Alignment(dx + 0.3, 0),
                       colors: const [
-                        AppColors.primary,
+                        AppColors.authBeige,
                         AppColors.accent,
-                        AppColors.primary,
+                        AppColors.authBeige,
                       ],
                       stops: const [0.0, 0.5, 1.0],
                     ).createShader(bounds);
@@ -157,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen>
                   style: AppStyles.title.copyWith(
                     letterSpacing: 42,
                     fontSize: 38,
-                    color: Colors.white,
+                    color: AppColors.authBeige,
                   ),
                 ),
               ),
@@ -174,13 +191,19 @@ class _LoginScreenState extends State<LoginScreen>
         alignment: Alignment.topCenter,
         child: Padding(
           padding: const EdgeInsets.only(top: 10),
-          child: Text(
-            'FIELD COLECTOR',
-            style: AppStyles.title.copyWith(
-              letterSpacing: 10,
-              color: AppColors.accent,
-              fontSize: 20,
-            ),
+          child: AnimatedBuilder(
+            animation: _curveT,
+            builder: (context, child) {
+              final onBeige = _curveT.value < 0.5;
+              return Text(
+                'FIELD COLECTOR',
+                style: AppStyles.title.copyWith(
+                  letterSpacing: 10,
+                  color: onBeige ? AppColors.primaryDark : AppColors.accent,
+                  fontSize: 20,
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -195,9 +218,12 @@ class _LoginScreenState extends State<LoginScreen>
         duration: const Duration(milliseconds: 300),
         child: SafeArea(
           child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: const WelcomeSection(),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: const SizedBox(
+                width: double.infinity,
+                child: WelcomeSection(),
+              ),
             ),
           ),
         ),
@@ -322,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen>
 // ── Animated curve clipper ─────────────────────────────────
 
 class _CurveClipper extends CustomClipper<Path> {
-  final double t; // 0 = welcome (green big), 1 = form (cream big)
+  final double t; // 0 = welcome (beige big), 1 = form (green big)
   _CurveClipper(this.t);
 
   double _lerp(double welcome, double form) => welcome + (form - welcome) * t;
