@@ -7,6 +7,7 @@ import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/features/map/map_services.dart';
 import 'package:field_colector/features/settings/providers/settings_provider.dart';
 import 'package:field_colector/features/map/models/map_record_pin.dart';
+import 'package:field_colector/features/map/widgets/map_record_legend.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -36,6 +37,14 @@ class MapScreen extends StatefulWidget {
     this.initialMapCenter,
     this.enableLiveGps = true,
     this.embedded = false,
+    this.onPinTapped,
+    this.onUserPositionChanged,
+    this.showRecordLegend = false,
+    this.offlineMapDataHint = false,
+    this.legendBottomInset = 12,
+    this.activeModuleFilters = const {},
+    this.onModuleFilterToggled,
+    this.focusNotifier,
   });
 
   /// Misma instancia que el resto de la app (no se recrea al push).
@@ -54,6 +63,24 @@ class MapScreen extends StatefulWidget {
   /// `true`: solo contenido del mapa (sin [Scaffold]/[AppBar]); pensado para incrustar
   /// en [DashboardScreen] u otra cáscara con su propia cromática y chrome.
   final bool embedded;
+
+  final ValueChanged<MapRecordPin>? onPinTapped;
+
+  /// Notifica posición GPS al [NearbyRecordsProvider].
+  final ValueChanged<LatLng?>? onUserPositionChanged;
+
+  final bool showRecordLegend;
+
+  final bool offlineMapDataHint;
+
+  final double legendBottomInset;
+
+  final Set<String> activeModuleFilters;
+
+  final ValueChanged<String>? onModuleFilterToggled;
+
+  /// Notificador externo: al cambiar valor, la cámara se mueve a esa posición.
+  final ValueNotifier<LatLng?>? focusNotifier;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -104,6 +131,13 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.focusNotifier?.addListener(_onExternalFocus);
+  }
+
+  void _onExternalFocus() {
+    final target = widget.focusNotifier?.value;
+    if (target == null) return;
+    _mapController.move(target, 15);
   }
 
   @override
@@ -291,6 +325,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         _savedAreas = areas;
         _syncStrategyFields(services, explicitZoneId: zone?.id);
       });
+      widget.onUserPositionChanged?.call(here);
 
       if (shouldMove && mounted) {
         _mapController.move(here, _mapController.camera.zoom);
@@ -303,6 +338,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    widget.focusNotifier?.removeListener(_onExternalFocus);
     WidgetsBinding.instance.removeObserver(this);
     _stopGpsTimer();
     _connSub?.cancel();
@@ -403,12 +439,11 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                         if (pin.toLatLng() case final pt?)
                           Marker(
                             point: pt,
-                            width: 32,
-                            height: 32,
-                            child: Icon(
-                              Icons.place,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 32,
+                            width: 36,
+                            height: 36,
+                            child: GestureDetector(
+                              onTap: () => widget.onPinTapped?.call(pin),
+                              child: _RecordPinMarker(pin: pin),
                             ),
                           ),
                     ],
@@ -424,7 +459,41 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         );
 
         if (widget.embedded) {
-          return SizedBox.expand(child: mapColumn);
+          return SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                mapColumn,
+                if (widget.showRecordLegend)
+                  Positioned(
+                    left: 12,
+                    bottom: widget.legendBottomInset,
+                    child: MapRecordLegend(
+                      activeFilters: widget.activeModuleFilters,
+                      onFilterToggled: widget.onModuleFilterToggled ?? (_) {},
+                      showOfflineHint: widget.offlineMapDataHint,
+                    ),
+                  ),
+                if (widget.enableLiveGps)
+                  Positioned(
+                    right: 56,
+                    bottom: widget.legendBottomInset,
+                    child: FloatingActionButton.small(
+                      heroTag: 'map_recenter_embedded',
+                      onPressed: !_gpsAllowed
+                          ? null
+                          : () => unawaited(
+                                _refreshUserPosition(
+                                  services,
+                                  moveCamera: true,
+                                ),
+                              ),
+                      child: const Icon(Icons.my_location),
+                    ),
+                  ),
+              ],
+            ),
+          );
         }
 
         return Scaffold(
@@ -443,6 +512,31 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           body: mapColumn,
         );
       },
+    );
+  }
+}
+
+class _RecordPinMarker extends StatelessWidget {
+  const _RecordPinMarker({required this.pin});
+
+  final MapRecordPin pin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        if (pin.isOwnRecord)
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.grassShadow, width: 2.5),
+            ),
+          ),
+        Icon(Icons.place, color: pin.pinColor, size: 36),
+      ],
     );
   }
 }
