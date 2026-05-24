@@ -1,3 +1,4 @@
+import '../entities/photo.dart';
 import '../entities/social_record.dart';
 import 'form_mapper_helpers.dart';
 import 'form_record_mapper.dart';
@@ -9,6 +10,7 @@ class SocialFormMapper implements FormRecordMapper<SocialRecord> {
     required String recordId,
     required String outingId,
     required String userId,
+    List<Photo> photos = const [],
   }) {
     final orgParticipation = FormMapperHelpers.stringValue(
       values,
@@ -87,6 +89,7 @@ class SocialFormMapper implements FormRecordMapper<SocialRecord> {
         'impacto_percibido_paisaje',
       ),
       observations: FormMapperHelpers.optionalString(values, 'observaciones'),
+      photos: photos,
     );
   }
 }

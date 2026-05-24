@@ -1,4 +1,5 @@
 import 'base_record.dart';
+import 'photo.dart';
 
 class SocialRecord extends BaseRecord {
   final String respondentId;
@@ -28,6 +29,7 @@ class SocialRecord extends BaseRecord {
   final String? practiceType;
   final String perceivedLandscapeImpact;
   final String? observations;
+  final List<Photo> photos;
 
   SocialRecord({
     required super.id,
@@ -67,5 +69,6 @@ class SocialRecord extends BaseRecord {
     this.practiceType,
     required this.perceivedLandscapeImpact,
     this.observations,
+    this.photos = const [],
   });
 }

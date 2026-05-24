@@ -1,4 +1,5 @@
 import '../entities/bird_record.dart';
+import '../entities/photo.dart';
 import 'form_mapper_helpers.dart';
 import 'form_record_mapper.dart';
 
@@ -9,6 +10,7 @@ class BirdFormMapper implements FormRecordMapper<BirdRecord> {
     required String recordId,
     required String outingId,
     required String userId,
+    List<Photo> photos = const [],
   }) {
     final speciesSelect = FormMapperHelpers.stringValue(values, 'especie_ave');
     final speciesId = speciesSelect == 'otra_especie'
@@ -50,7 +52,7 @@ class BirdFormMapper implements FormRecordMapper<BirdRecord> {
       habitat: FormMapperHelpers.stringListValue(values, 'habitat_vegetacion'),
       foragingType: FormMapperHelpers.stringListValue(values, 'tipo_forrajeo'),
       observedThreats: observedThreats,
-      photos: const [],
+      photos: photos,
     );
   }
 }
