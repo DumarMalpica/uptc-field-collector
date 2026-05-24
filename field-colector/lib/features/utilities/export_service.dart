@@ -33,13 +33,79 @@ class ExportService {
     required this.socialPort,
   });
 
+  /// Firestore needs composite index for equality + date range on same query.
+  /// When [outingId] or [userId] is set, fetch without dates and filter in app.
+  static bool _filterDatesOnClient({
+    String? outingId,
+    String? userId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return (outingId != null || userId != null) &&
+        (startDate != null || endDate != null);
+  }
+
+  static DateTime _startOfDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  static DateTime _endOfDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+  static bool _inDateRange(
+    DateTime recordedAt,
+    DateTime? startDate,
+    DateTime? endDate,
+  ) {
+    if (startDate != null && recordedAt.isBefore(_startOfDay(startDate))) {
+      return false;
+    }
+    if (endDate != null && recordedAt.isAfter(_endOfDay(endDate))) {
+      return false;
+    }
+    return true;
+  }
+
+  static List<T> _applyDateFilter<T>(
+    List<T> records,
+    DateTime Function(T) recordedAt,
+    DateTime? startDate,
+    DateTime? endDate,
+  ) {
+    return records
+        .where(
+          (r) => _inDateRange(recordedAt(r), startDate, endDate),
+        )
+        .toList();
+  }
+
   Future<String?> generateExcel({String? outingId, String? userId, DateTime? startDate, DateTime? endDate, required String fileNamePrefix}) async {
+    final rangeStart =
+        startDate != null ? _startOfDay(startDate) : null;
+    final rangeEnd = endDate != null ? _endOfDay(endDate) : null;
+
+    final clientDateFilter = _filterDatesOnClient(
+      outingId: outingId,
+      userId: userId,
+      startDate: rangeStart,
+      endDate: rangeEnd,
+    );
+    final queryStart = clientDateFilter ? null : rangeStart;
+    final queryEnd = clientDateFilter ? null : rangeEnd;
+
     try {
       var excel = Excel.createExcel();
 
       String defaultSheet = excel.getDefaultSheet() ?? 'Sheet1';
 
-      final birds = await birdPort.getBirdRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
+      var birds = await birdPort.getBirdRecordsForExport(
+        outingId: outingId,
+        userId: userId,
+        startDate: queryStart,
+        endDate: queryEnd,
+      );
+      if (clientDateFilter) {
+        birds = _applyDateFilter(birds, (b) => b.recordedAt, rangeStart, rangeEnd);
+      }
       if (birds.isNotEmpty) {
         Sheet sheet = excel['Aves'];
         sheet.appendRow([
@@ -65,7 +131,15 @@ class ExportService {
         }
       }
 
-      final rocks = await rockPort.getRockRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
+      var rocks = await rockPort.getRockRecordsForExport(
+        outingId: outingId,
+        userId: userId,
+        startDate: queryStart,
+        endDate: queryEnd,
+      );
+      if (clientDateFilter) {
+        rocks = _applyDateFilter(rocks, (r) => r.recordedAt, rangeStart, rangeEnd);
+      }
       if (rocks.isNotEmpty) {
         Sheet sheet = excel['Rocas'];
         sheet.appendRow([
@@ -89,7 +163,15 @@ class ExportService {
         }
       }
 
-      final soils = await soilPort.getSoilRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
+      var soils = await soilPort.getSoilRecordsForExport(
+        outingId: outingId,
+        userId: userId,
+        startDate: queryStart,
+        endDate: queryEnd,
+      );
+      if (clientDateFilter) {
+        soils = _applyDateFilter(soils, (s) => s.recordedAt, rangeStart, rangeEnd);
+      }
       if (soils.isNotEmpty) {
         Sheet sheet = excel['Suelos'];
         sheet.appendRow([
@@ -113,7 +195,15 @@ class ExportService {
         }
       }
 
-      final veg = await vegetationPort.getVegetationRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
+      var veg = await vegetationPort.getVegetationRecordsForExport(
+        outingId: outingId,
+        userId: userId,
+        startDate: queryStart,
+        endDate: queryEnd,
+      );
+      if (clientDateFilter) {
+        veg = _applyDateFilter(veg, (v) => v.recordedAt, rangeStart, rangeEnd);
+      }
       if (veg.isNotEmpty) {
         Sheet sheet = excel['Vegetación'];
         sheet.appendRow([
@@ -137,7 +227,15 @@ class ExportService {
         }
       }
 
-      final water = await waterPort.getWaterRecordsForExport(outingId: outingId, userId: userId, startDate: startDate, endDate: endDate);
+      var water = await waterPort.getWaterRecordsForExport(
+        outingId: outingId,
+        userId: userId,
+        startDate: queryStart,
+        endDate: queryEnd,
+      );
+      if (clientDateFilter) {
+        water = _applyDateFilter(water, (w) => w.recordedAt, rangeStart, rangeEnd);
+      }
       if (water.isNotEmpty) {
         Sheet sheet = excel['Agua'];
         sheet.appendRow([
@@ -167,12 +265,20 @@ class ExportService {
         }
       }
 
-      final socials = await socialPort.getSocialRecordsForExport(
+      var socials = await socialPort.getSocialRecordsForExport(
         outingId: outingId,
         userId: userId,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: queryStart,
+        endDate: queryEnd,
       );
+      if (clientDateFilter) {
+        socials = _applyDateFilter(
+          socials,
+          (s) => s.recordedAt,
+          rangeStart,
+          rangeEnd,
+        );
+      }
       if (socials.isNotEmpty) {
         Sheet sheet = excel['Social'];
         sheet.appendRow([
@@ -227,16 +333,16 @@ class ExportService {
       String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       String filePath = '${tempDir.path}/${fileNamePrefix}_$timestamp.xlsx';
 
-      File file = File(filePath)
+      File(filePath)
         ..createSync(recursive: true)
         ..writeAsBytesSync(fileBytes);
 
       print('Archivo Excel generado con éxito: $filePath');
       return filePath;
 
-    } catch (e) {
-      print('Error generando el archivo Excel: $e');
-      return null;
+    } catch (e, stackTrace) {
+      print('Error generando el archivo Excel: $e\n$stackTrace');
+      rethrow;
     }
   }
 }
