@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:field_colector/core/services/record_local_persistence.dart';
 import 'package:field_colector/domain/entities/base_record.dart';
 import 'package:field_colector/domain/mappers/form_mapper_registry.dart';
 import 'package:field_colector/domain/ports/bird_record_local_port.dart';
@@ -40,6 +41,7 @@ class NearbyRecordsProvider extends ChangeNotifier {
     required NetworkReachability reachability,
     required FieldSessionProvider fieldSession,
     required Authprovider auth,
+    required RecordLocalPersistence recordPersistence,
   })  : _birdLocal = birdLocal,
         _rockLocal = rockLocal,
         _soilLocal = soilLocal,
@@ -55,6 +57,7 @@ class NearbyRecordsProvider extends ChangeNotifier {
         _reachability = reachability,
         _fieldSession = fieldSession,
         _auth = auth,
+        _recordPersistence = recordPersistence,
         _activeModuleFilters = Set<String>.from(MapRecordPin.moduleColors.keys);
 
   static const double radiusMeters = 2000;
@@ -76,6 +79,7 @@ class NearbyRecordsProvider extends ChangeNotifier {
   final NetworkReachability _reachability;
   final FieldSessionProvider _fieldSession;
   final Authprovider _auth;
+  final RecordLocalPersistence _recordPersistence;
 
   final Map<String, BaseRecord> _recordsById = {};
   final Map<String, String> _moduleByRecordId = {};
@@ -198,6 +202,13 @@ class NearbyRecordsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _persistRecords(
+    String moduleFormId,
+    List<BaseRecord> records,
+  ) async {
+    await _recordPersistence.upsertSyncedRecords(moduleFormId, records);
+  }
+
   void _cancelOutingSubs() {
     for (final s in _outingSubs) {
       unawaited(s.cancel());
@@ -249,6 +260,7 @@ class NearbyRecordsProvider extends ChangeNotifier {
 
   void _onOutingRemoteUpdate(String moduleFormId, List<BaseRecord> records) {
     _putRecords(moduleFormId, records);
+    unawaited(_persistRecords(moduleFormId, records));
     unawaited(_applyRadiusFilter());
   }
 
@@ -271,6 +283,16 @@ class NearbyRecordsProvider extends ChangeNotifier {
       _putRecords(FormMapperRegistry.moduloVegetacion, results[3]);
       _putRecords(FormMapperRegistry.moduloAgua, results[4]);
       _putRecords(FormMapperRegistry.moduloSocial, results[5]);
+
+      await _persistRecords(FormMapperRegistry.moduloAves, results[0]);
+      await _persistRecords(FormMapperRegistry.moduloRocas, results[1]);
+      await _persistRecords(FormMapperRegistry.moduloSuelos, results[2]);
+      await _persistRecords(
+        FormMapperRegistry.moduloVegetacion,
+        results[3],
+      );
+      await _persistRecords(FormMapperRegistry.moduloAgua, results[4]);
+      await _persistRecords(FormMapperRegistry.moduloSocial, results[5]);
 
       await _applyRadiusFilter();
     } finally {

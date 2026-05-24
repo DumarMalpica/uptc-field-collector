@@ -1,5 +1,7 @@
+import 'package:field_colector/core/services/expedition_sync_service.dart';
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/domain/ports/outing_local_port.dart';
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_create_screen.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_detail_screen.dart';
@@ -81,12 +83,22 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     });
   }
 
-  Future<void> _loadOutings() async {
+  Future<void> _loadOutings({bool forceRemoteSync = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
+      final auth = context.read<Authprovider>();
+      final userId = auth.user?.id;
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          await context
+              .read<ExpeditionSyncService>()
+              .syncExpeditionsForUser(userId);
+        } catch (_) {}
+      }
+
       final outings = await context.read<OutingLocalPort>().getAllOutings();
       if (!mounted) return;
       setState(() {
@@ -211,8 +223,12 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                             style: TextStyle(color: AppColors.textSecondary),
                           ),
                         )
-                      : ListView(
-                          children: [
+                      : RefreshIndicator(
+                          onRefresh: () =>
+                              _loadOutings(forceRemoteSync: true),
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
                             if (_unselected.isNotEmpty) ...[
                               _SectionHeader(
                                 title: 'Expediciones disponibles',
@@ -249,6 +265,7 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                             ],
                             const SizedBox(height: 16),
                           ],
+                          ),
                         ),
         ),
       ],

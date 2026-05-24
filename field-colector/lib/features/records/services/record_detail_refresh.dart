@@ -1,3 +1,6 @@
+import 'dart:developer' as developer;
+
+import 'package:field_colector/core/services/record_local_persistence.dart';
 import 'package:field_colector/domain/entities/base_record.dart';
 import 'package:field_colector/domain/entities/social_record.dart';
 import 'package:field_colector/domain/mappers/form_mapper_registry.dart';
@@ -66,21 +69,47 @@ class RecordDetailRefresh {
     );
     if (local != null || !tryRemote) return local;
 
-    return switch (moduleFormId) {
-      FormMapperRegistry.moduloAves =>
-        context.read<BirdRecordRemotePort>().getBirdRecordById(recordId),
-      FormMapperRegistry.moduloRocas =>
-        context.read<RockRecordRemotePort>().getRockRecordById(recordId),
-      FormMapperRegistry.moduloSuelos =>
-        context.read<SoilRecordRemotePort>().getSoilRecordById(recordId),
-      FormMapperRegistry.moduloVegetacion => context
-          .read<VegetationRecordRemotePort>()
-          .getVegetationRecordById(recordId),
-      FormMapperRegistry.moduloAgua =>
-        context.read<WaterRecordRemotePort>().getWaterRecordById(recordId),
-      FormMapperRegistry.moduloSocial =>
-        context.read<SocialRecordRemotePort>().getSocialRecordById(recordId),
-      _ => null,
-    };
+    try {
+      final remote = await switch (moduleFormId) {
+        FormMapperRegistry.moduloAves =>
+          context.read<BirdRecordRemotePort>().getBirdRecordById(recordId),
+        FormMapperRegistry.moduloRocas =>
+          context.read<RockRecordRemotePort>().getRockRecordById(recordId),
+        FormMapperRegistry.moduloSuelos =>
+          context.read<SoilRecordRemotePort>().getSoilRecordById(recordId),
+        FormMapperRegistry.moduloVegetacion => context
+            .read<VegetationRecordRemotePort>()
+            .getVegetationRecordById(recordId),
+        FormMapperRegistry.moduloAgua =>
+          context.read<WaterRecordRemotePort>().getWaterRecordById(recordId),
+        FormMapperRegistry.moduloSocial =>
+          context.read<SocialRecordRemotePort>().getSocialRecordById(recordId),
+        _ => Future<BaseRecord?>.value(null),
+      };
+
+      if (remote == null) return null;
+
+      await context.read<RecordLocalPersistence>().upsertSyncedRecord(
+            moduleFormId,
+            remote,
+          );
+
+      if (moduleFormId == FormMapperRegistry.moduloSocial &&
+          remote is SocialRecord) {
+        return RecordPhotoEnrichment.socialWithPhotos(
+          remote,
+          context.read<PhotoLocalPort>(),
+        );
+      }
+      return remote;
+    } catch (e, stack) {
+      developer.log(
+        'RecordDetailRefresh remote fetch failed',
+        name: 'RecordDetailRefresh',
+        error: e,
+        stackTrace: stack,
+      );
+      return null;
+    }
   }
 }
