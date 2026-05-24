@@ -2,6 +2,7 @@ import 'package:field_colector/data/careers_asset.dart';
 import 'package:field_colector/domain/mappers/register_user_dto_builder.dart';
 import 'package:field_colector/domain/ports/auth_port.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/manual/providers/manual_intro_provider.dart';
 import 'package:field_colector/features/auth/theme/auth_form_theme.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
@@ -115,10 +116,15 @@ class _RegisterFormState extends State<RegisterForm> {
   Future<void> _submitRegistration(RegisterUserDto dto) async {
     setState(() => _isSubmitting = true);
     final auth = context.read<Authprovider>();
+    final manualIntro = context.read<ManualIntroProvider>();
     try {
       await auth.register(dto);
-      if (!mounted) return;
       if (auth.errorMessage == null && auth.isAuthenticated) {
+        final userId = auth.user?.id;
+        if (userId != null && userId.isNotEmpty) {
+          await manualIntro.markPendingAfterRegistration(userId);
+        }
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cuenta creada. Bienvenido/a.')),
         );

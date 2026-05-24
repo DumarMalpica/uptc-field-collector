@@ -6,6 +6,7 @@ import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/auth/screens/login.dart';
 import 'package:field_colector/features/dashboard/screens/dashboard.dart';
 import 'package:field_colector/features/home/screens/loading.dart';
+import 'package:field_colector/features/manual/widgets/manual_intro_host.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -59,8 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
           return LoginScreen();
         }
 
-        return DashboardScreen(
-          locator: context.read<LocatorProvider>(),
+        return ManualIntroHost(
+          child: DashboardScreen(
+            locator: context.read<LocatorProvider>(),
+          ),
         );
       },
     );
