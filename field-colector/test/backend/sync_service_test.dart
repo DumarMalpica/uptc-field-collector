@@ -113,6 +113,20 @@ void main() {
       expect(await p.buildService().hasPendingSync(), isFalse);
     });
 
+    test('getPendingSummary expone conteos de registros y fotos', () async {
+      final p = _Ports()..stubAllEmpty();
+      when(() => p.birdLocal.getPendingSyncRecords())
+          .thenAnswer((_) async => [_bird()]);
+      when(() => p.photoLocal.getPendingSyncPhotos())
+          .thenAnswer((_) async => [_photo()]);
+
+      final summary = await p.buildService().getPendingSummary();
+
+      expect(summary.pendingRecords, 1);
+      expect(summary.pendingPhotos, 1);
+      expect(summary.hasPending, isTrue);
+    });
+
     test('hasPendingSync retorna true si hay registros pendientes', () async {
       final p = _Ports()..stubAllEmpty();
       when(() => p.birdLocal.getPendingSyncRecords())

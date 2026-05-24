@@ -24,7 +24,7 @@ class SettingsSection extends StatefulWidget {
 
 class _SettingsSectionState extends State<SettingsSection> {
   bool _isSyncing = false;
-  bool _hasPendingSync = false;
+  SyncPendingSummary? _pendingSummary;
 
   @override
   void initState() {
@@ -37,9 +37,29 @@ class _SettingsSectionState extends State<SettingsSection> {
   }
 
   Future<void> _refreshPendingSyncStatus() async {
-    final pending = await context.read<SyncPort>().hasPendingSync();
+    final sync = context.read<SyncPort>();
+    final summary = await sync.getPendingSummary();
     if (!mounted) return;
-    setState(() => _hasPendingSync = pending);
+    setState(() => _pendingSummary = summary);
+  }
+
+  String _syncSubtitle() {
+    if (_isSyncing) return 'Sincronizando…';
+    final summary = _pendingSummary;
+    if (summary == null || !summary.hasPending) {
+      return 'Todo sincronizado';
+    }
+    final parts = <String>[];
+    if (summary.pendingOutings > 0) {
+      parts.add('${summary.pendingOutings} expedición(es)');
+    }
+    if (summary.pendingRecords > 0) {
+      parts.add('${summary.pendingRecords} registro(s)');
+    }
+    if (summary.pendingPhotos > 0) {
+      parts.add('${summary.pendingPhotos} foto(s)');
+    }
+    return 'Pendiente: ${parts.join(' · ')}';
   }
 
   Future<void> _syncNow() async {
@@ -320,11 +340,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                 children: [
                   SettingsTile.action(
                     title: 'Sincronizar ahora',
-                    subtitle: _isSyncing
-                        ? 'Sincronizando…'
-                        : _hasPendingSync
-                            ? 'Hay datos pendientes de subir'
-                            : 'Todo sincronizado',
+                    subtitle: _syncSubtitle(),
                     enabled: !_isSyncing && !settings.isBusy,
                     trailing: _isSyncing
                         ? const SizedBox(

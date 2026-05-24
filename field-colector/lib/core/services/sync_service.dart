@@ -14,7 +14,10 @@ import '../../domain/ports/water_record_local_port.dart';
 import '../../domain/ports/water_record_remote_port.dart';
 import '../../domain/ports/social_record_local_port.dart';
 import '../../domain/ports/social_record_remote_port.dart';
+import '../../domain/entities/photo.dart';
 import '../../domain/ports/photo_local_port.dart';
+import '../../adapters/real/record_photo_sync_helper.dart';
+import '../../features/records/services/record_photo_enrichment.dart';
 
 class SyncService implements SyncPort {
   final OutingLocalPort _outingLocalPort;
@@ -72,29 +75,31 @@ class SyncService implements SyncPort {
 
   @override
   Future<bool> hasPendingSync() async {
+    final summary = await getPendingSummary();
+    return summary.hasPending;
+  }
+
+  @override
+  Future<SyncPendingSummary> getPendingSummary() async {
     final outings = await _outingLocalPort.getPendingSyncOutings();
-    if (outings.isNotEmpty) return true;
-
     final birds = await _birdLocalPort.getPendingSyncRecords();
-    if (birds.isNotEmpty) return true;
-
     final rocks = await _rockLocalPort.getPendingSyncRecords();
-    if (rocks.isNotEmpty) return true;
-
     final soils = await _soilLocalPort.getPendingSyncRecords();
-    if (soils.isNotEmpty) return true;
-
     final vegs = await _vegLocalPort.getPendingSyncRecords();
-    if (vegs.isNotEmpty) return true;
-
     final waters = await _waterLocalPort.getPendingSyncRecords();
-    if (waters.isNotEmpty) return true;
-
     final socials = await _socialLocalPort.getPendingSyncRecords();
-    if (socials.isNotEmpty) return true;
-
     final photos = await _photoLocalPort.getPendingSyncPhotos();
-    return photos.isNotEmpty;
+
+    return SyncPendingSummary(
+      pendingOutings: outings.length,
+      pendingRecords: birds.length +
+          rocks.length +
+          soils.length +
+          vegs.length +
+          waters.length +
+          socials.length,
+      pendingPhotos: photos.length,
+    );
   }
 
   @override
@@ -222,7 +227,11 @@ class SyncService implements SyncPort {
     for (final record in pendingSocials) {
       emitProgress('Sincronizando registro social ${record.id}');
       try {
-        await _socialRemotePort.saveSocialRecord(record);
+        final enriched = await RecordPhotoEnrichment.socialWithPhotos(
+          record,
+          _photoLocalPort,
+        );
+        await _socialRemotePort.saveSocialRecord(enriched);
         await _socialLocalPort.updateSyncStatus(record.id, 'synced');
         synced++;
       } catch (e) {
@@ -233,12 +242,38 @@ class SyncService implements SyncPort {
       completed++;
     }
 
-    // 3. Photos — last, because they reference recordId in Firebase Storage
+    // 3. Fotos huérfanas — registro ya sincronizado pero foto aún pendiente
+    final pendingRecordIds = {
+      ...pendingBirds.map((r) => r.id),
+      ...pendingRocks.map((r) => r.id),
+      ...pendingSoils.map((r) => r.id),
+      ...pendingVegs.map((r) => r.id),
+      ...pendingWaters.map((r) => r.id),
+      ...pendingSocials.map((r) => r.id),
+    };
+
     for (final photo in pendingPhotos) {
+      if (pendingRecordIds.contains(photo.recordId)) {
+        completed++;
+        continue;
+      }
+
       emitProgress('Sincronizando foto ${photo.id}');
       try {
-        await _photoLocalPort.updatePhotoSyncStatus(photo.id, 'synced');
-        synced++;
+        final outingId = await _outingIdForPhoto(photo);
+        await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+          recordId: photo.recordId,
+          recordType: photo.recordType,
+          outingId: outingId,
+          photos: [photo],
+        );
+        final refreshed = await _photoLocalPort.getPhotoById(photo.id);
+        if (refreshed?.syncStatus == 'synced') {
+          synced++;
+        } else {
+          failed++;
+          errors.add('photo:${photo.id}: upload failed');
+        }
       } catch (e) {
         await _photoLocalPort.updatePhotoSyncStatus(photo.id, 'error');
         failed++;
@@ -248,6 +283,28 @@ class SyncService implements SyncPort {
     }
 
     return SyncResult(synced: synced, failed: failed, errors: errors);
+  }
+
+  Future<String> _outingIdForPhoto(Photo photo) async {
+    final recordId = photo.recordId;
+    final recordType = photo.recordType.toLowerCase();
+
+    switch (recordType) {
+      case 'bird':
+        return (await _birdLocalPort.getRecordById(recordId))?.outingId ?? '';
+      case 'rock':
+        return (await _rockLocalPort.getRecordById(recordId))?.outingId ?? '';
+      case 'soil':
+        return (await _soilLocalPort.getRecordById(recordId))?.outingId ?? '';
+      case 'vegetation':
+        return (await _vegLocalPort.getRecordById(recordId))?.outingId ?? '';
+      case 'water':
+        return (await _waterLocalPort.getRecordById(recordId))?.outingId ?? '';
+      case 'social':
+        return (await _socialLocalPort.getRecordById(recordId))?.outingId ?? '';
+      default:
+        return '';
+    }
   }
 
   void dispose() {
