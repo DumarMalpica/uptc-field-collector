@@ -14,23 +14,35 @@ void main() {
   group('PhotoLocalPort — contrato de almacenamiento local de fotos', () {
     // ── Guardado ──────────────────────────────────────────────────────────────
 
-    test('savePhotoLocally retorna la ruta local del archivo', () async {
+    test('savePhotoLocally retorna el photoId generado', () async {
       final bytes = Uint8List.fromList([0xFF, 0xD8, 0xFF]); // header JPEG
-      const expectedPath =
-          '/data/user/0/com.citesa/files/citesa_photos/bird-rec-001/field_1234567.jpg';
+      const expectedId = 'bird-rec-001-1234567';
 
-      when(() => mockPort.savePhotoLocally(bytes, 'bird-rec-001', 'field'))
-          .thenAnswer((_) async => expectedPath);
+      when(
+        () => mockPort.savePhotoLocally(
+          bytes,
+          'bird-rec-001',
+          'field',
+          recordType: 'bird',
+        ),
+      ).thenAnswer((_) async => expectedId);
 
-      final path =
-          await mockPort.savePhotoLocally(bytes, 'bird-rec-001', 'field');
+      final photoId = await mockPort.savePhotoLocally(
+        bytes,
+        'bird-rec-001',
+        'field',
+        recordType: 'bird',
+      );
 
-      expect(path, isNotEmpty);
-      expect(path, contains('citesa_photos'));
-      expect(path, contains('bird-rec-001'));
-      verify(() =>
-              mockPort.savePhotoLocally(bytes, 'bird-rec-001', 'field'))
-          .called(1);
+      expect(photoId, expectedId);
+      verify(
+        () => mockPort.savePhotoLocally(
+          bytes,
+          'bird-rec-001',
+          'field',
+          recordType: 'bird',
+        ),
+      ).called(1);
     });
 
     test('savePhotoLocally con distintos recordId genera rutas distintas',
@@ -39,15 +51,35 @@ void main() {
       const pathBird = '/files/citesa_photos/bird-rec-001/field_111.jpg';
       const pathRock = '/files/citesa_photos/rock-rec-001/field_222.jpg';
 
-      when(() => mockPort.savePhotoLocally(bytes, 'bird-rec-001', 'field'))
-          .thenAnswer((_) async => pathBird);
-      when(() => mockPort.savePhotoLocally(bytes, 'rock-rec-001', 'field'))
-          .thenAnswer((_) async => pathRock);
+      when(
+        () => mockPort.savePhotoLocally(
+          bytes,
+          'bird-rec-001',
+          'field',
+          recordType: 'bird',
+        ),
+      ).thenAnswer((_) async => pathBird);
+      when(
+        () => mockPort.savePhotoLocally(
+          bytes,
+          'rock-rec-001',
+          'field',
+          recordType: 'rock',
+        ),
+      ).thenAnswer((_) async => pathRock);
 
-      final r1 =
-          await mockPort.savePhotoLocally(bytes, 'bird-rec-001', 'field');
-      final r2 =
-          await mockPort.savePhotoLocally(bytes, 'rock-rec-001', 'field');
+      final r1 = await mockPort.savePhotoLocally(
+        bytes,
+        'bird-rec-001',
+        'field',
+        recordType: 'bird',
+      );
+      final r2 = await mockPort.savePhotoLocally(
+        bytes,
+        'rock-rec-001',
+        'field',
+        recordType: 'rock',
+      );
 
       expect(r1, isNot(equals(r2)));
     });
@@ -137,8 +169,14 @@ void main() {
           'https://storage.googleapis.com/citesa/outings/bird-rec-001/field_1234567.jpg';
       final pending = _photoPending();
 
-      when(() => mockPort.savePhotoLocally(bytes, recordId, 'field'))
-          .thenAnswer((_) async => localPath);
+      when(
+        () => mockPort.savePhotoLocally(
+          bytes,
+          recordId,
+          'field',
+          recordType: 'bird',
+        ),
+      ).thenAnswer((_) async => photoId);
       when(() => mockPort.getPhotosByRecord(recordId))
           .thenAnswer((_) async => [pending]);
       when(() => mockPort.getPendingSyncPhotos())
@@ -146,9 +184,13 @@ void main() {
       when(() => mockPort.updatePhotoStorageUrl(photoId, storageUrl))
           .thenAnswer((_) async {});
 
-      final path =
-          await mockPort.savePhotoLocally(bytes, recordId, 'field');
-      expect(path, localPath);
+      final id = await mockPort.savePhotoLocally(
+        bytes,
+        recordId,
+        'field',
+        recordType: 'bird',
+      );
+      expect(id, photoId);
 
       final fotos = await mockPort.getPhotosByRecord(recordId);
       expect(fotos.first.syncStatus, 'pending');
@@ -188,13 +230,24 @@ void main() {
       const photoId = 'rock-rec-001-9999';
       const localPath = '/files/citesa_photos/rock-rec-001/panorama_9999.jpg';
 
-      when(() => mockPort.savePhotoLocally(bytes, recordId, 'panorama'))
-          .thenAnswer((_) async => localPath);
+      when(
+        () => mockPort.savePhotoLocally(
+          bytes,
+          recordId,
+          'panorama',
+          recordType: 'rock',
+        ),
+      ).thenAnswer((_) async => photoId);
       when(() => mockPort.deletePhoto(photoId)).thenAnswer((_) async {});
       when(() => mockPort.getPhotosByRecord(recordId))
           .thenAnswer((_) async => []);
 
-      await mockPort.savePhotoLocally(bytes, recordId, 'panorama');
+      await mockPort.savePhotoLocally(
+        bytes,
+        recordId,
+        'panorama',
+        recordType: 'rock',
+      );
       await mockPort.deletePhoto(photoId);
 
       final result = await mockPort.getPhotosByRecord(recordId);

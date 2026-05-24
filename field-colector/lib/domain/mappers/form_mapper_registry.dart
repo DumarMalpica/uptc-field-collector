@@ -35,4 +35,15 @@ class FormMapperRegistry {
   }
 
   bool supports(String moduleFormId) => mapperFor(moduleFormId) != null;
+
+  /// Tipo de registro usado en Cloudinary/Firestore para fotos del módulo.
+  static String recordTypeFor(String moduleFormId) => switch (moduleFormId) {
+        moduloAves => 'bird',
+        moduloRocas => 'rock',
+        moduloSuelos => 'soil',
+        moduloVegetacion => 'vegetation',
+        moduloAgua => 'water',
+        moduloSocial => 'social',
+        _ => 'unknown',
+      };
 }

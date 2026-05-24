@@ -4,6 +4,10 @@
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Se requiere acceso al GPS para asociar coordenadas geográficas al muestreo de campo.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Se requiere acceso a la cámara para capturar fotos de los registros de campo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Se requiere acceso a la galería para adjuntar fotos a los registros de campo.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

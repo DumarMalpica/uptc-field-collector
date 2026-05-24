@@ -1,3 +1,4 @@
+import '../entities/photo.dart';
 import '../entities/vegetation_record.dart';
 import 'form_mapper_helpers.dart';
 import 'form_record_mapper.dart';
@@ -9,6 +10,7 @@ class VegetationFormMapper implements FormRecordMapper<VegetationRecord> {
     required String recordId,
     required String outingId,
     required String userId,
+    List<Photo> photos = const [],
   }) {
     final speciesSelect =
         FormMapperHelpers.stringValue(values, 'especie_principal');
@@ -66,7 +68,7 @@ class VegetationFormMapper implements FormRecordMapper<VegetationRecord> {
       groundCover:
           FormMapperHelpers.stringValue(values, 'cobertura_suelo_aparente'),
       plot: FormMapperHelpers.parsePlot(values),
-      photos: const [],
+      photos: photos,
     );
   }
 }

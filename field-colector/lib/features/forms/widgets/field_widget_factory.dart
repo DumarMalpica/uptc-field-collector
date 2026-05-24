@@ -41,7 +41,7 @@ class FieldWidgetFactory {
       case 'gps_capture':
         return FormGpsCaptureField(field: field, provider: provider);
       case 'image_capture':
-        return FormImageCaptureField(field: field);
+        return FormImageCaptureField(field: field, provider: provider);
       default:
         return ListTile(
           title: Text(field.label),

@@ -132,6 +132,62 @@ void main() {
     await tempFile.delete();
     await tempDir.delete();
   });
+
+  test('RecordPhotoSyncHelper resuelve colección social_records', () async {
+    when(() => mockFirestore.collection('social_records'))
+        .thenReturn(mockRecordCollection);
+    when(() => mockRecordCollection.doc('social_456'))
+        .thenReturn(mockRecordDocRef);
+
+    final tempDir = await Directory.systemTemp.createTemp();
+    final tempFile = File('${tempDir.path}/social.jpg');
+    await tempFile.writeAsBytes([0, 1, 2, 3]);
+
+    final photo = Photo(
+      id: 'photo_social',
+      filename: 'social.jpg',
+      localPath: tempFile.path,
+      storageUrl: '',
+      photoType: 'field',
+      recordId: 'social_456',
+      recordType: 'social',
+      syncStatus: 'pending',
+    );
+
+    when(() => mockRecordDocRef.get()).thenAnswer((_) async => mockRecordDocSnap);
+    when(() => mockRecordDocSnap.exists).thenReturn(true);
+    when(() => mockRecordDocSnap.data()).thenReturn({
+      'photos': [
+        {
+          'id': 'photo_social',
+          'storageUrl': '',
+          'syncStatus': 'pending',
+        },
+      ],
+    });
+
+    when(() => mockFirestore.runTransaction(any())).thenAnswer((invocation) async {
+      final callback = invocation.positionalArguments[0]
+          as Future<void> Function(Transaction);
+      await callback(MockTransaction());
+      return null;
+    });
+
+    await RecordPhotoSyncHelper.uploadAndSyncPhotos(
+      recordId: 'social_456',
+      recordType: 'social',
+      outingId: 'outing_123',
+      photos: [photo],
+      firestore: mockFirestore,
+      httpClient: mockHttpClient,
+    );
+
+    verify(() => mockFirestore.collection('social_records')).called(1);
+    verify(() => mockHttpClient.send(any())).called(1);
+
+    await tempFile.delete();
+    await tempDir.delete();
+  });
 }
 
 class MockTransaction extends Mock implements Transaction {}

@@ -1,3 +1,4 @@
+import '../entities/photo.dart';
 import '../entities/water_record.dart';
 import 'form_mapper_helpers.dart';
 import 'form_record_mapper.dart';
@@ -9,6 +10,7 @@ class WaterFormMapper implements FormRecordMapper<WaterRecord> {
     required String recordId,
     required String outingId,
     required String userId,
+    List<Photo> photos = const [],
   }) {
     final accessSelect =
         FormMapperHelpers.stringValue(values, 'visibilidad_acceso');
@@ -78,7 +80,7 @@ class WaterFormMapper implements FormRecordMapper<WaterRecord> {
               childKey: 'objetivo_otro',
             )
           : null,
-      photos: const [],
+      photos: photos,
     );
   }
 }

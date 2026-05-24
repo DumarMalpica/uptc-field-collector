@@ -113,6 +113,15 @@ class FirebaseRockRecordAdapter implements RockRecordRemotePort {
     return snapshot.docs.map((doc) => _mapSnapshotToRockRecord(doc)).toList();
   }
 
+  @override
+  Stream<List<RockRecord>> watchRockRecordsByOuting(String outingId) {
+    return _firestore
+        .collection(_collection)
+        .where('outingId', isEqualTo: outingId)
+        .snapshots()
+        .map((snap) => snap.docs.map(_mapSnapshotToRockRecord).toList());
+  }
+
   RockRecord _mapSnapshotToRockRecord(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final coord = data['coordinates'] as Map<String, dynamic>? ?? {};

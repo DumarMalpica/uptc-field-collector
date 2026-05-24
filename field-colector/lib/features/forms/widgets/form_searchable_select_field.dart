@@ -4,6 +4,7 @@
 /// [FormProvider.setValue] para mantener coherencia con reglas `show_child`.
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
+import 'package:field_colector/features/forms/widgets/form_field_label.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -109,7 +110,7 @@ class _FormSearchableSelectFieldState extends State<FormSearchableSelectField> {
                   controller: controller,
                   focusNode: focusNode,
                   decoration: InputDecoration(
-                    labelText: widget.field.label,
+                    label: FormFieldLabel(text: widget.field.label),
                     hintText: 'Buscar…',
                     errorText: state.errorText,
                     border: const OutlineInputBorder(),

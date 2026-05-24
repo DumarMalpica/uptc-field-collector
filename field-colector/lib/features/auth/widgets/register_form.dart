@@ -2,6 +2,8 @@ import 'package:field_colector/data/careers_asset.dart';
 import 'package:field_colector/domain/mappers/register_user_dto_builder.dart';
 import 'package:field_colector/domain/ports/auth_port.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
+import 'package:field_colector/features/manual/providers/manual_intro_provider.dart';
+import 'package:field_colector/features/auth/theme/auth_form_theme.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:field_colector/features/utilities/theme/app_styles.dart';
 import 'package:flutter/material.dart';
@@ -114,10 +116,15 @@ class _RegisterFormState extends State<RegisterForm> {
   Future<void> _submitRegistration(RegisterUserDto dto) async {
     setState(() => _isSubmitting = true);
     final auth = context.read<Authprovider>();
+    final manualIntro = context.read<ManualIntroProvider>();
     try {
       await auth.register(dto);
-      if (!mounted) return;
       if (auth.errorMessage == null && auth.isAuthenticated) {
+        final userId = auth.user?.id;
+        if (userId != null && userId.isNotEmpty) {
+          await manualIntro.markPendingAfterRegistration(userId);
+        }
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cuenta creada. Bienvenido/a.')),
         );
@@ -170,206 +177,207 @@ class _RegisterFormState extends State<RegisterForm> {
         final emailServerErr = _emailServerErrorText(mailTrim, errMsg, errType);
         final generalErr = _generalRegisterError(errMsg, errType);
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Regístrate',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(color: AppColors.primaryDark),
-            ),
-            AppStyles.gapMd,
-            if (generalErr != null) ...[
-              Text(
-                generalErr,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.error),
+        return Theme(
+          data: AuthFormTheme.onGreen(Theme.of(context)),
+          child: Builder(builder: (ctx) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Regístrate', style: Theme.of(ctx).textTheme.titleLarge),
+              AppStyles.gapMd,
+              if (generalErr != null) ...[
+                Text(
+                  generalErr,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.error),
+                ),
+                AppStyles.gapSm,
+              ],
+              TextField(
+                controller: _firstNameController,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(labelText: 'Nombre'),
               ),
               AppStyles.gapSm,
-            ],
-            TextField(
-              controller: _firstNameController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            AppStyles.gapSm,
-            TextField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(labelText: 'Apellido'),
-            ),
-            AppStyles.gapSm,
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Correo',
-                errorText: mailTrim.isNotEmpty && !_registerEmailOk(mailTrim)
-                    ? 'Correo no válido'
-                    : emailServerErr,
+              TextField(
+                controller: _lastNameController,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(
+                  labelText: 'Apellido',
+                ),
               ),
-            ),
-            AppStyles.gapSm,
-
-            RadioGroup<int>(
-              groupValue: _userType,
-              onChanged: (v) {
-                context.read<Authprovider>().clearAuthFormError();
-                setState(() => _userType = v);
-              },
-              child: Row(
-                children: const [
-                  Expanded(
-                    child: RadioListTile<int>(
-                      title: Text('Estudiante'),
-                      value: 0,
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<int>(
-                      title: Text('Profesional'),
-                      value: 1,
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                    ),
-                  ),
-                ],
+              AppStyles.gapSm,
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(
+                  labelText: 'Correo',
+                  errorText: mailTrim.isNotEmpty && !_registerEmailOk(mailTrim)
+                      ? 'Correo no válido'
+                      : emailServerErr,
+                ),
               ),
-            ),
-            AppStyles.gapSm,
+              AppStyles.gapSm,
 
-            FutureBuilder<List<String>>(
-              future: _careersFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  );
-                }
-
-                if (snapshot.hasError || snapshot.data == null) {
-                  return Text(
-                    'Error al cargar carreras',
-                    style: TextStyle(color: AppColors.error),
-                  );
-                }
-
-                final careers = snapshot.data!;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DropdownMenu<String>(
-                      initialSelection: _studyArea,
-                      label: const Text('Área de estudio'),
-                      dropdownMenuEntries: careers.map((c) {
-                        return DropdownMenuEntry(value: c, label: c);
-                      }).toList(),
-                      onSelected: (v) {
-                        context.read<Authprovider>().clearAuthFormError();
-                        setState(() => _studyArea = v);
-                      },
-                      width: double.infinity,
-                    ),
-                    if (_studyArea == 'Otra')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: TextFormField(
-                          decoration: const InputDecoration(
-                            labelText: 'Especifica tu carrera',
-                            hintText: 'Ingresa tu carrera',
-                          ),
-                          onChanged: (v) {
-                            context.read<Authprovider>().clearAuthFormError();
-                            setState(() => _otherCareer = v);
-                          },
-                        ),
+              RadioGroup<int>(
+                groupValue: _userType,
+                onChanged: (v) {
+                  context.read<Authprovider>().clearAuthFormError();
+                  setState(() => _userType = v);
+                },
+                child: Row(
+                  children: const [
+                    Expanded(
+                      child: RadioListTile<int>(
+                        title: Text('Estudiante'),
+                        value: 0,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
                       ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<int>(
+                        title: Text('Profesional'),
+                        value: 1,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ),
                   ],
-                );
-              },
-            ),
-            AppStyles.gapSm,
-
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Contraseña',
-                helperText: errType == AuthErrorType.weakPassword
-                    ? 'Use al menos 6 caracteres; combine letras y números.'
-                    : null,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
-            ),
-            AppStyles.gapSm,
+              AppStyles.gapSm,
 
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: _obscureConfirmPassword,
-              decoration: InputDecoration(
-                labelText: 'Confirmar contraseña',
-                enabledBorder: _confirmPasswordMismatch()
-                    ? OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: AppColors.error,
-                          width: 1.5,
-                        ),
-                      )
-                    : null,
-                focusedBorder: _confirmPasswordMismatch()
-                    ? OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(
-                          color: AppColors.error,
-                          width: 2,
-                        ),
-                      )
-                    : null,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirmPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                  onPressed: () => setState(
-                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                  ),
-                ),
-              ),
-            ),
-            AppStyles.gapLg,
-
-            OutlinedButton(
-              onPressed:
-                  _canSubmit() && !_isSubmitting ? _onRegisterPressed : null,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primaryDark),
-              ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
+              FutureBuilder<List<String>>(
+                future: _careersFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const SizedBox(
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Registrarse'),
-            ),
-          ],
+                    );
+                  }
+
+                  if (snapshot.hasError || snapshot.data == null) {
+                    return Text(
+                      'Error al cargar carreras',
+                      style: TextStyle(color: AppColors.error),
+                    );
+                  }
+
+                  final careers = snapshot.data!;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownMenu<String>(
+                        initialSelection: _studyArea,
+                        label: const Text(
+                          'Área de estudio',
+                          style: TextStyle(color: AuthFormTheme.inputLabelColor),
+                        ),
+                        dropdownMenuEntries: careers.map((c) {
+                          return DropdownMenuEntry(
+                            value: c,
+                            label: c,
+                            style: ButtonStyle(
+                              foregroundColor: WidgetStateProperty.all(
+                                AuthFormTheme.menuItemTextColor,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onSelected: (v) {
+                          context.read<Authprovider>().clearAuthFormError();
+                          setState(() => _studyArea = v);
+                        },
+                        width: double.infinity,
+                      ),
+                      if (_studyArea == 'Otra')
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: TextFormField(
+                            style: const TextStyle(
+                              color: AuthFormTheme.fieldTextColor,
+                            ),
+                            decoration: AuthFormTheme.fieldDecoration(
+                              labelText: 'Especifica tu carrera',
+                              hintText: 'Ingresa tu carrera',
+                            ),
+                            onChanged: (v) {
+                              context.read<Authprovider>().clearAuthFormError();
+                              setState(() => _otherCareer = v);
+                            },
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              AppStyles.gapSm,
+
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(
+                  labelText: 'Contraseña',
+                  helperText: errType == AuthErrorType.weakPassword
+                      ? 'Use al menos 6 caracteres; combine letras y números.'
+                      : null,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+              ),
+              AppStyles.gapSm,
+
+              TextField(
+                controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(
+                  labelText: 'Confirmar contraseña',
+                  errorText: _confirmPasswordMismatch()
+                      ? 'Las contraseñas no coinciden'
+                      : null,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
+                  ),
+                ),
+              ),
+              AppStyles.gapLg,
+
+              OutlinedButton(
+                onPressed: _canSubmit() && !_isSubmitting
+                    ? _onRegisterPressed
+                    : null,
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Registrarse'),
+              ),
+            ],
+          )),
         );
       },
     );

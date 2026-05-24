@@ -1,8 +1,11 @@
+import 'package:field_colector/core/services/expedition_sync_service.dart';
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/domain/ports/outing_local_port.dart';
+import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_create_screen.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_detail_screen.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:field_colector/features/expeditions/widgets/expedition_card.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -13,11 +16,13 @@ import 'package:provider/provider.dart';
 /// Contiene:
 /// - Input de búsqueda
 /// - Sección de expediciones disponibles (sin seleccionar)
-/// - Sección de expediciones seleccionadas (con check + bandera)
+/// - Sección de expediciones seleccionadas (con check + bandera; ver TODO en [_selectedIds])
 ///
 /// Al tocar una tarjeta (no el check), se abre el detalle en el mismo espacio.
 class ExpeditionListScreen extends StatefulWidget {
-  const ExpeditionListScreen({super.key});
+  const ExpeditionListScreen({super.key, this.onNavigateToLocation});
+
+  final ValueChanged<LatLng>? onNavigateToLocation;
 
   @override
   State<ExpeditionListScreen> createState() => _ExpeditionListScreenState();
@@ -25,6 +30,8 @@ class ExpeditionListScreen extends StatefulWidget {
 
 class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  // TODO: Persistir selección y precargar datos offline (expedición, registros,
+  // mapa) para uso sin red. Hoy solo reorganiza la lista en memoria.
   final Set<String> _selectedIds = {};
   String _searchQuery = '';
 
@@ -76,12 +83,22 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     });
   }
 
-  Future<void> _loadOutings() async {
+  Future<void> _loadOutings({bool forceRemoteSync = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
+      final auth = context.read<Authprovider>();
+      final userId = auth.user?.id;
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          await context
+              .read<ExpeditionSyncService>()
+              .syncExpeditionsForUser(userId);
+        } catch (_) {}
+      }
+
       final outings = await context.read<OutingLocalPort>().getAllOutings();
       if (!mounted) return;
       setState(() {
@@ -134,6 +151,7 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
           setState(() => _detailOuting = null);
           _loadOutings();
         },
+        onNavigateToLocation: widget.onNavigateToLocation,
       );
     }
 
@@ -205,8 +223,12 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                             style: TextStyle(color: AppColors.textSecondary),
                           ),
                         )
-                      : ListView(
-                          children: [
+                      : RefreshIndicator(
+                          onRefresh: () =>
+                              _loadOutings(forceRemoteSync: true),
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
                             if (_unselected.isNotEmpty) ...[
                               _SectionHeader(
                                 title: 'Expediciones disponibles',
@@ -243,6 +265,7 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                             ],
                             const SizedBox(height: 16),
                           ],
+                          ),
                         ),
         ),
       ],

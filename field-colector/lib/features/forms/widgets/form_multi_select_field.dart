@@ -4,6 +4,7 @@
 /// ([FormProvider.setMultiSelectValues]); también participa en `show_child`.
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
+import 'package:field_colector/features/forms/widgets/form_field_label.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -47,7 +48,7 @@ class FormMultiSelectField extends StatelessWidget {
       builder: (state) {
         return InputDecorator(
           decoration: InputDecoration(
-            labelText: field.label,
+            label: FormFieldLabel(text: field.label),
             errorText: state.errorText,
             border: const OutlineInputBorder(),
             filled: true,

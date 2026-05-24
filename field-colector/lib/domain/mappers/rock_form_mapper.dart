@@ -1,3 +1,4 @@
+import '../entities/photo.dart';
 import '../entities/rock_record.dart';
 import 'form_mapper_helpers.dart';
 import 'form_record_mapper.dart';
@@ -9,6 +10,7 @@ class RockFormMapper implements FormRecordMapper<RockRecord> {
     required String recordId,
     required String outingId,
     required String userId,
+    List<Photo> photos = const [],
   }) {
     final rockTypeSelect = FormMapperHelpers.stringValue(values, 'tipo_roca');
     final sampleDepth =
@@ -40,7 +42,7 @@ class RockFormMapper implements FormRecordMapper<RockRecord> {
       sampleDepth: sampleDepth,
       observations:
           FormMapperHelpers.stringValue(values, 'observaciones_adicionales'),
-      photos: const [],
+      photos: photos,
     );
   }
 }

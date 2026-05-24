@@ -10,6 +10,8 @@ import 'package:field_colector/adapters/real/isar_vegetation_record_adapter.dart
 import 'package:field_colector/adapters/real/isar_water_record_adapter.dart';
 import 'package:field_colector/adapters/real/photo_storage_adapter.dart';
 import 'package:field_colector/core/services/connectivity_sync_service.dart';
+import 'package:field_colector/core/services/expedition_sync_service.dart';
+import 'package:field_colector/core/services/record_local_persistence.dart';
 import 'package:field_colector/core/services/record_submit_service.dart';
 import 'package:field_colector/core/services/sync_service.dart';
 import 'package:field_colector/core/services/user_cache_service.dart';
@@ -36,6 +38,7 @@ import 'package:field_colector/features/profile/providers/profile_provider.dart'
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/home/screens/home.dart';
 import 'package:field_colector/features/map/map_services.dart';
+import 'package:field_colector/features/map/providers/nearby_records_provider.dart';
 import 'package:field_colector/features/utilities/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +69,8 @@ import 'package:field_colector/adapters/real/firebase_user_adapter.dart';
 import 'package:field_colector/adapters/real/firebase_vegetation_record_adapter.dart';
 import 'package:field_colector/adapters/real/firebase_water_record_adapter.dart';
 
+import 'package:field_colector/features/export/providers/export_provider.dart';
+import 'package:field_colector/features/manual/providers/manual_intro_provider.dart';
 import 'package:field_colector/features/utilities/export_service.dart';
 
 Future<void> main() async {
@@ -125,6 +130,9 @@ class MyApp extends StatelessWidget {
             sessionValidation: sessionValidation,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => ManualIntroProvider(),
+        ),
         ChangeNotifierProvider(create: (_) => FormDraftService()),
         Provider<MapServices>.value(value: mapServices),
         ChangeNotifierProvider(
@@ -141,35 +149,56 @@ class MyApp extends StatelessWidget {
 
         Provider<BirdRecordRemotePort>(create: (_) => FirebaseBirdRecordAdapter(FirebaseFirestore.instance)),
         Provider<BirdRecordLocalPort>(create: (_) => IsarBirdRecordAdapter()),
-        Provider<OutingRemotePort>(create: (_) => FirebaseOutingAdapter(FirebaseFirestore.instance)),
-        Provider<OutingLocalPort>(create: (_) => IsarOutingAdapter()),
-        ChangeNotifierProvider(
-          create: (context) => FieldSessionProvider(
-            outingLocal: context.read<OutingLocalPort>(),
-          ),
-        ),
         Provider<RockRecordRemotePort>(create: (_) => FirebaseRockRecordAdapter(FirebaseFirestore.instance)),
         Provider<RockRecordLocalPort>(create: (_) => IsarRockRecordAdapter()),
         Provider<SoilRecordRemotePort>(create: (_) => FirebaseSoilRecordAdapter(FirebaseFirestore.instance)),
         Provider<SoilRecordLocalPort>(create: (_) => IsarSoilRecordAdapter()),
-        Provider<SpeciesRemotePort>(create: (_) => FirebaseSpeciesAdapter(FirebaseFirestore.instance)),
-        Provider<UserRemotePort>(create: (_) => FirebaseUserAdapter(FirebaseFirestore.instance)),
-        Provider<UserCacheService>(
-          create: (context) => UserCacheService(
-            userRemote: context.read<UserRemotePort>(),
-          ),
-        ),
+        Provider<VegetationRecordRemotePort>(create: (_) => FirebaseVegetationRecordAdapter(FirebaseFirestore.instance)),
         Provider<VegetationRecordLocalPort>(create: (_) => IsarVegetationRecordAdapter()),
+        Provider<WaterRecordRemotePort>(create: (_) => FirebaseWaterRecordAdapter(FirebaseFirestore.instance)),
         Provider<WaterRecordLocalPort>(create: (_) => IsarWaterRecordAdapter()),
         Provider<SocialRecordRemotePort>(
           create: (_) => FirebaseSocialRecordAdapter(FirebaseFirestore.instance),
         ),
         Provider<SocialRecordLocalPort>(create: (_) => IsarSocialRecordAdapter()),
+        Provider<OutingRemotePort>(create: (_) => FirebaseOutingAdapter(FirebaseFirestore.instance)),
+        Provider<OutingLocalPort>(create: (_) => IsarOutingAdapter()),
+        Provider<SpeciesRemotePort>(create: (_) => FirebaseSpeciesAdapter(FirebaseFirestore.instance)),
+        Provider<UserRemotePort>(create: (_) => FirebaseUserAdapter(FirebaseFirestore.instance)),
+        Provider<PhotoLocalPort>(create: (_) => PhotoStorageAdapter()),
         Provider<FormMapperRegistry>(create: (_) => FormMapperRegistry()),
+        Provider<ExpeditionSyncService>(
+          create: (context) => ExpeditionSyncService(
+            outingLocal: context.read<OutingLocalPort>(),
+            outingRemote: context.read<OutingRemotePort>(),
+            reachability: context.read<MapServices>().reachability,
+          ),
+        ),
+        Provider<RecordLocalPersistence>(
+          create: (context) => RecordLocalPersistence(
+            birdLocal: context.read<BirdRecordLocalPort>(),
+            rockLocal: context.read<RockRecordLocalPort>(),
+            soilLocal: context.read<SoilRecordLocalPort>(),
+            vegetationLocal: context.read<VegetationRecordLocalPort>(),
+            waterLocal: context.read<WaterRecordLocalPort>(),
+            socialLocal: context.read<SocialRecordLocalPort>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => FieldSessionProvider(
+            outingLocal: context.read<OutingLocalPort>(),
+          ),
+        ),
+        Provider<UserCacheService>(
+          create: (context) => UserCacheService(
+            userRemote: context.read<UserRemotePort>(),
+          ),
+        ),
         Provider<RecordSubmitService>(
           create: (context) => RecordSubmitService(
             registry: context.read<FormMapperRegistry>(),
             outingLocal: context.read<OutingLocalPort>(),
+            photoLocal: context.read<PhotoLocalPort>(),
             birdLocal: context.read<BirdRecordLocalPort>(),
             rockLocal: context.read<RockRecordLocalPort>(),
             soilLocal: context.read<SoilRecordLocalPort>(),
@@ -184,9 +213,26 @@ class MyApp extends StatelessWidget {
             userRemote: context.read<UserRemotePort>(),
           ),
         ),
-        Provider<VegetationRecordRemotePort>(create: (_) => FirebaseVegetationRecordAdapter(FirebaseFirestore.instance)),
-        Provider<WaterRecordRemotePort>(create: (_) => FirebaseWaterRecordAdapter(FirebaseFirestore.instance)),
-        Provider<PhotoLocalPort>(create: (_) => PhotoStorageAdapter()),
+        ChangeNotifierProvider(
+          create: (context) => NearbyRecordsProvider(
+            birdLocal: context.read<BirdRecordLocalPort>(),
+            rockLocal: context.read<RockRecordLocalPort>(),
+            soilLocal: context.read<SoilRecordLocalPort>(),
+            vegetationLocal: context.read<VegetationRecordLocalPort>(),
+            waterLocal: context.read<WaterRecordLocalPort>(),
+            socialLocal: context.read<SocialRecordLocalPort>(),
+            birdRemote: context.read<BirdRecordRemotePort>(),
+            rockRemote: context.read<RockRecordRemotePort>(),
+            soilRemote: context.read<SoilRecordRemotePort>(),
+            vegetationRemote: context.read<VegetationRecordRemotePort>(),
+            waterRemote: context.read<WaterRecordRemotePort>(),
+            socialRemote: context.read<SocialRecordRemotePort>(),
+            reachability: context.read<MapServices>().reachability,
+            fieldSession: context.read<FieldSessionProvider>(),
+            auth: context.read<Authprovider>(),
+            recordPersistence: context.read<RecordLocalPersistence>(),
+          )..start(),
+        ),
         Provider<SyncPort>(
           create: (context) => SyncService(
             outingLocalPort: context.read<OutingLocalPort>(),
@@ -218,6 +264,11 @@ class MyApp extends StatelessWidget {
             vegetationPort: context.read<VegetationRecordRemotePort>(),
             waterPort: context.read<WaterRecordRemotePort>(),
             socialPort: context.read<SocialRecordRemotePort>(),
+          ),
+        ),
+        ChangeNotifierProvider<ExportProvider>(
+          create: (context) => ExportProvider(
+            exportService: context.read<ExportService>(),
           ),
         ),
       ],

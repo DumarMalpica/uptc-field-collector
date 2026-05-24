@@ -8,6 +8,8 @@ abstract class VegetationRecordRemotePort {
   Future<VegetationRecord?> getVegetationRecordById(String id);
   Future<VegetationRecordSearchResult> getVegetationRecords({int limit = 20, DocumentSnapshot? lastDocument});
   Future<List<VegetationRecord>> getVegetationRecordsForExport({String? outingId, String? userId, DateTime? startDate, DateTime? endDate});
+
+  Stream<List<VegetationRecord>> watchVegetationRecordsByOuting(String outingId);
 }
 
 class VegetationRecordSearchResult {

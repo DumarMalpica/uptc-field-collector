@@ -1,6 +1,6 @@
 import 'package:field_colector/domain/mappers/login_user.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
-import 'package:field_colector/features/utilities/theme/app_colors.dart';
+import 'package:field_colector/features/auth/theme/auth_form_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -89,79 +89,75 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _staggered(
-          0,
-          TextField(
-            controller: _userController,
-            onChanged: (_) => _onFieldChanged(),
-            decoration: const InputDecoration(
-              labelText: 'Correo',
-              suffixIcon: Icon(Icons.person_outline),
+    return Theme(
+      data: AuthFormTheme.onGreen(Theme.of(context)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _staggered(
+            0,
+            TextField(
+              controller: _userController,
+              onChanged: (_) => _onFieldChanged(),
+              style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+              decoration: AuthFormTheme.fieldDecoration(
+                labelText: 'Correo',
+                suffixIcon: const Icon(Icons.person_outline),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        _staggered(
-          1,
-          TextField(
-            controller: _passwordController,
-            onChanged: (_) => _onFieldChanged(),
-            obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              labelText: 'Contraseña',
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
+          const SizedBox(height: 16),
+          _staggered(
+            1,
+            TextField(
+              controller: _passwordController,
+              onChanged: (_) => _onFieldChanged(),
+              obscureText: _obscurePassword,
+              style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+              decoration: AuthFormTheme.fieldDecoration(
+                labelText: 'Contraseña',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 24),
-        _staggered(
-          2,
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _fieldsFilled() && !_isLoggingIn ? _submit : null,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primaryDark),
+          const SizedBox(height: 24),
+          _staggered(
+            2,
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _fieldsFilled() && !_isLoggingIn ? _submit : null,
+                child: _isLoggingIn
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Ingresar'),
               ),
-              child: _isLoggingIn
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Ingresar'),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        _staggered(
-          3,
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              '¿Olvidaste tu contraseña?',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.primaryDark),
+          const SizedBox(height: 8),
+          _staggered(
+            3,
+            TextButton(
+              onPressed: () {},
+              child: const Text('¿Olvidaste tu contraseña?'),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

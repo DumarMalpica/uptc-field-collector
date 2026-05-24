@@ -9,6 +9,7 @@ import 'package:field_colector/domain/utils/geo_coords.dart';
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:provider/provider.dart';
 import 'package:field_colector/features/forms/providers/form_provider.dart';
+import 'package:field_colector/features/forms/widgets/form_field_label.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -107,7 +108,7 @@ class _FormGpsCaptureFieldState extends State<FormGpsCaptureField> {
         final map = widget.provider.valueFor(widget.field.fieldId);
         return InputDecorator(
           decoration: InputDecoration(
-            labelText: widget.field.label,
+            label: FormFieldLabel(text: widget.field.label),
             errorText: state.errorText ?? _error,
             border: const OutlineInputBorder(),
             filled: true,

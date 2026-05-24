@@ -121,6 +121,15 @@ class FirebaseWaterRecordAdapter implements WaterRecordRemotePort {
     return snapshot.docs.map((doc) => _mapSnapshotToWaterRecord(doc)).toList();
   }
 
+  @override
+  Stream<List<WaterRecord>> watchWaterRecordsByOuting(String outingId) {
+    return _firestore
+        .collection(_collection)
+        .where('outingId', isEqualTo: outingId)
+        .snapshots()
+        .map((snap) => snap.docs.map(_mapSnapshotToWaterRecord).toList());
+  }
+
   WaterRecord _mapSnapshotToWaterRecord(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final coord = data['coordinates'] as Map<String, dynamic>? ?? {};

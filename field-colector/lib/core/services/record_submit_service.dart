@@ -1,8 +1,10 @@
 import 'package:uuid/uuid.dart';
 
+import '../../domain/entities/photo.dart';
 import '../../domain/mappers/form_mapper_registry.dart';
 import '../../domain/ports/bird_record_local_port.dart';
 import '../../domain/ports/outing_local_port.dart';
+import '../../domain/ports/photo_local_port.dart';
 import '../../domain/ports/rock_record_local_port.dart';
 import '../../domain/ports/soil_record_local_port.dart';
 import '../../domain/ports/social_record_local_port.dart';
@@ -14,6 +16,7 @@ class RecordSubmitService {
   RecordSubmitService({
     required FormMapperRegistry registry,
     required OutingLocalPort outingLocal,
+    required PhotoLocalPort photoLocal,
     required BirdRecordLocalPort birdLocal,
     required RockRecordLocalPort rockLocal,
     required SoilRecordLocalPort soilLocal,
@@ -22,6 +25,7 @@ class RecordSubmitService {
     required SocialRecordLocalPort socialLocal,
   })  : _registry = registry,
         _outingLocal = outingLocal,
+        _photoLocal = photoLocal,
         _birdLocal = birdLocal,
         _rockLocal = rockLocal,
         _soilLocal = soilLocal,
@@ -31,6 +35,7 @@ class RecordSubmitService {
 
   final FormMapperRegistry _registry;
   final OutingLocalPort _outingLocal;
+  final PhotoLocalPort _photoLocal;
   final BirdRecordLocalPort _birdLocal;
   final RockRecordLocalPort _rockLocal;
   final SoilRecordLocalPort _soilLocal;
@@ -45,6 +50,7 @@ class RecordSubmitService {
     required Map<String, dynamic> values,
     required String outingId,
     required String userId,
+    String? draftRecordId,
   }) async {
     final outing = await _outingLocal.getOutingById(outingId);
     if (outing == null || !outing.isMember(userId)) {
@@ -54,6 +60,24 @@ class RecordSubmitService {
     }
 
     final recordId = _uuid.v4();
+    final recordType = FormMapperRegistry.recordTypeFor(moduleFormId);
+
+    if (draftRecordId != null &&
+        draftRecordId.isNotEmpty &&
+        draftRecordId != recordId) {
+      await _photoLocal.relinkPhotosToRecord(
+        draftRecordId,
+        recordId,
+        recordType: recordType,
+      );
+    }
+
+    final photos = await _resolvePhotos(
+      values: values,
+      recordId: recordId,
+      draftRecordId: draftRecordId,
+    );
+
     final mapper = _registry.mapperFor(moduleFormId);
     if (mapper == null) {
       throw UnsupportedError('Formulario no soportado: $moduleFormId');
@@ -67,6 +91,7 @@ class RecordSubmitService {
             recordId: recordId,
             outingId: outingId,
             userId: userId,
+            photos: photos,
           ),
         );
       case FormMapperRegistry.moduloRocas:
@@ -76,6 +101,7 @@ class RecordSubmitService {
             recordId: recordId,
             outingId: outingId,
             userId: userId,
+            photos: photos,
           ),
         );
       case FormMapperRegistry.moduloSuelos:
@@ -85,6 +111,7 @@ class RecordSubmitService {
             recordId: recordId,
             outingId: outingId,
             userId: userId,
+            photos: photos,
           ),
         );
       case FormMapperRegistry.moduloVegetacion:
@@ -94,6 +121,7 @@ class RecordSubmitService {
             recordId: recordId,
             outingId: outingId,
             userId: userId,
+            photos: photos,
           ),
         );
       case FormMapperRegistry.moduloAgua:
@@ -103,6 +131,7 @@ class RecordSubmitService {
             recordId: recordId,
             outingId: outingId,
             userId: userId,
+            photos: photos,
           ),
         );
       case FormMapperRegistry.moduloSocial:
@@ -112,6 +141,7 @@ class RecordSubmitService {
             recordId: recordId,
             outingId: outingId,
             userId: userId,
+            photos: photos,
           ),
         );
       default:
@@ -119,5 +149,43 @@ class RecordSubmitService {
     }
 
     return recordId;
+  }
+
+  Future<List<Photo>> _resolvePhotos({
+    required Map<String, dynamic> values,
+    required String recordId,
+    String? draftRecordId,
+  }) async {
+    final photoIds = <String>{};
+    for (final entry in values.entries) {
+      final v = entry.value;
+      if (v is List) {
+        for (final item in v) {
+          final id = item.toString();
+          if (id.isNotEmpty) photoIds.add(id);
+        }
+      }
+    }
+
+    final byRecord = await _photoLocal.getPhotosByRecord(recordId);
+    final merged = <String, Photo>{
+      for (final p in byRecord) p.id: p,
+    };
+
+    if (draftRecordId != null &&
+        draftRecordId.isNotEmpty &&
+        draftRecordId != recordId) {
+      final draftPhotos = await _photoLocal.getPhotosByRecord(draftRecordId);
+      for (final p in draftPhotos) {
+        merged[p.id] = p;
+      }
+    }
+
+    for (final id in photoIds) {
+      final photo = await _photoLocal.getPhotoById(id);
+      if (photo != null) merged[id] = photo;
+    }
+
+    return merged.values.toList();
   }
 }

@@ -1,3 +1,4 @@
+import '../entities/photo.dart';
 import '../entities/soil_record.dart';
 import 'form_mapper_helpers.dart';
 import 'form_record_mapper.dart';
@@ -9,6 +10,7 @@ class SoilFormMapper implements FormRecordMapper<SoilRecord> {
     required String recordId,
     required String outingId,
     required String userId,
+    List<Photo> photos = const [],
   }) {
     final soilTypes = FormMapperHelpers.stringListValue(values, 'tipo_suelo');
     final sampleDepth =
@@ -50,7 +52,7 @@ class SoilFormMapper implements FormRecordMapper<SoilRecord> {
       observations:
           FormMapperHelpers.stringValue(values, 'observaciones_adicionales'),
       plot: FormMapperHelpers.parsePlot(values),
-      photos: const [],
+      photos: photos,
     );
   }
 }

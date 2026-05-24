@@ -1,5 +1,4 @@
 import 'package:field_colector/core/services/user_cache_service.dart';
-import 'package:field_colector/domain/entities/base_record.dart';
 import 'package:field_colector/domain/outing_member_display.dart';
 import 'package:field_colector/domain/ports/bird_record_local_port.dart';
 import 'package:field_colector/domain/ports/rock_record_local_port.dart';
@@ -7,23 +6,14 @@ import 'package:field_colector/domain/ports/social_record_local_port.dart';
 import 'package:field_colector/domain/ports/soil_record_local_port.dart';
 import 'package:field_colector/domain/ports/vegetation_record_local_port.dart';
 import 'package:field_colector/domain/ports/water_record_local_port.dart';
+import 'package:field_colector/features/records/models/record_list_item.dart';
+import 'package:field_colector/features/records/screens/record_detail_screen.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:field_colector/features/records/widgets/sync_badge.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-/// Entrada unificada para listar registros de distintos módulos.
-class _RecordEntry {
-  const _RecordEntry({
-    required this.typeLabel,
-    required this.typeIcon,
-    required this.record,
-  });
-
-  final String typeLabel;
-  final IconData typeIcon;
-  final BaseRecord record;
-}
 
 /// Lista todos los registros locales de una expedición (todos los módulos).
 class RecordListScreen extends StatefulWidget {
@@ -31,20 +21,23 @@ class RecordListScreen extends StatefulWidget {
     super.key,
     required this.outingId,
     required this.onBack,
+    this.onNavigateToLocation,
   });
 
   final String outingId;
   final VoidCallback onBack;
+  final ValueChanged<LatLng>? onNavigateToLocation;
 
   @override
   State<RecordListScreen> createState() => _RecordListScreenState();
 }
 
 class _RecordListScreenState extends State<RecordListScreen> {
-  List<_RecordEntry> _entries = [];
+  List<RecordListItem> _entries = [];
   Map<String, String> _userNames = {};
   bool _loading = true;
   String? _error;
+  RecordListItem? _selected;
 
   @override
   void initState() {
@@ -73,57 +66,23 @@ class _RecordListScreenState extends State<RecordListScreen> {
       final waters = await water.getRecordsByOuting(widget.outingId);
       final socials = await social.getRecordsByOuting(widget.outingId);
 
-      final entries = <_RecordEntry>[];
-      for (final r in birds) {
-        entries.add(_RecordEntry(
-          typeLabel: 'Aves',
-          typeIcon: Icons.flutter_dash,
-          record: r,
-        ));
-      }
-      for (final r in rocks) {
-        entries.add(_RecordEntry(
-          typeLabel: 'Rocas',
-          typeIcon: Icons.landscape,
-          record: r,
-        ));
-      }
-      for (final r in soils) {
-        entries.add(_RecordEntry(
-          typeLabel: 'Suelos',
-          typeIcon: Icons.grass,
-          record: r,
-        ));
-      }
-      for (final r in veg) {
-        entries.add(_RecordEntry(
-          typeLabel: 'Vegetación',
-          typeIcon: Icons.forest,
-          record: r,
-        ));
-      }
-      for (final r in waters) {
-        entries.add(_RecordEntry(
-          typeLabel: 'Agua',
-          typeIcon: Icons.water_drop,
-          record: r,
-        ));
-      }
-      for (final r in socials) {
-        entries.add(_RecordEntry(
-          typeLabel: 'Social',
-          typeIcon: Icons.groups,
-          record: r,
-        ));
-      }
-      entries.sort((a, b) => b.record.recordedAt.compareTo(a.record.recordedAt));
+      final entries = <RecordListItem>[
+        for (final r in birds) RecordListItem.bird(r),
+        for (final r in rocks) RecordListItem.rock(r),
+        for (final r in soils) RecordListItem.soil(r),
+        for (final r in veg) RecordListItem.vegetation(r),
+        for (final r in waters) RecordListItem.water(r),
+        for (final r in socials) RecordListItem.social(r),
+      ];
+      entries.sort(
+        (a, b) => b.record.recordedAt.compareTo(a.record.recordedAt),
+      );
 
       final userIds = entries.map((e) => e.record.userId).toSet();
       final users =
           await context.read<UserCacheService>().resolveUsers(userIds);
       final names = <String, String>{
-        for (final e in users.entries)
-          e.key: e.value.fullName,
+        for (final e in users.entries) e.key: e.value.fullName,
       };
 
       if (!mounted) return;
@@ -149,6 +108,14 @@ class _RecordListScreenState extends State<RecordListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_selected != null) {
+      return RecordDetailScreen(
+        item: _selected!,
+        onBack: () => setState(() => _selected = null),
+        onNavigateToLocation: widget.onNavigateToLocation,
+      );
+    }
+
     final dateFormat = DateFormat('dd MMM yyyy HH:mm', 'es');
 
     return Column(
@@ -230,6 +197,8 @@ class _RecordListScreenState extends State<RecordListScreen> {
                                 ),
                               ),
                               child: ListTile(
+                                onTap: () =>
+                                    setState(() => _selected = entry),
                                 leading: CircleAvatar(
                                   backgroundColor: AppColors.primary
                                       .withValues(alpha: 0.12),
@@ -290,41 +259,24 @@ class _RecordListScreenState extends State<RecordListScreen> {
                                     ),
                                   ],
                                 ),
-                                trailing: _SyncBadge(status: r.syncStatus),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SyncBadge(status: r.syncStatus),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 20,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },
                         ),
         ),
       ],
-    );
-  }
-}
-
-class _SyncBadge extends StatelessWidget {
-  const _SyncBadge({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final synced = status == 'synced';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: synced
-            ? AppColors.primary.withValues(alpha: 0.12)
-            : Colors.orange.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        synced ? 'Sync' : status,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: synced ? AppColors.primary : Colors.orange.shade800,
-        ),
-      ),
     );
   }
 }

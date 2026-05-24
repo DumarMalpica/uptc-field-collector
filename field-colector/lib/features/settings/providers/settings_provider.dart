@@ -15,14 +15,14 @@ class SettingsProvider extends ChangeNotifier {
     required AppSettingsStore store,
     required MapServices mapServices,
     required FormDraftService formDrafts,
-  })  : _store = store,
-        _mapServices = mapServices,
-        _formDrafts = formDrafts {
+  }) : _store = store,
+       _mapServices = mapServices,
+       _formDrafts = formDrafts {
     Future.microtask(_bootstrap);
   }
 
   static const String previewStoreId = 'field_preview';
-  static const String defaultSupportEmail = 'soporte@citesa.com';
+  static const String defaultSupportEmail = 'grupo.citesa@uptc.edu.co';
 
   final AppSettingsStore _store;
   final MapServices _mapServices;

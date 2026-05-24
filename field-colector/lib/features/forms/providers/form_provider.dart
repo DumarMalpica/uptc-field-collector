@@ -11,6 +11,7 @@
 import 'dart:async';
 
 import 'package:field_colector/core/database/form_draft_service.dart';
+import 'package:uuid/uuid.dart';
 import 'package:field_colector/features/forms/models/form_schema.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +39,9 @@ class FormProvider extends ChangeNotifier {
 
   bool _dirty = false;
   bool _skipPersistOnDispose = false;
+  bool _isCapturingPhoto = false;
   Timer? _saveTimer;
+  String _draftRecordId = const Uuid().v4();
 
   static final Map<String, _CachedMerged> _cache = {};
 
@@ -50,16 +53,42 @@ class FormProvider extends ChangeNotifier {
   List<FormFieldDef> get fields => List.unmodifiable(_fields);
   Map<String, dynamic> get values => Map.unmodifiable(_values);
   bool get isDirty => _dirty;
+  bool get isCapturingPhoto => _isCapturingPhoto;
+  String get draftRecordId => _draftRecordId;
 
   /// `true` cuando todos los campos obligatorios visibles tienen valor válido.
-  /// Omite `image_capture` (fotos aún sin implementar).
   bool get allVisibleRequiredFieldsFilled {
+    if (_isCapturingPhoto) return false;
     for (final field in visibleFieldsOrdered()) {
       if (!field.isRequired) continue;
-      if (field.type == 'image_capture') continue;
       if (!_isFieldValueFilled(field)) return false;
     }
     return true;
+  }
+
+  void setCapturingPhoto(bool value) {
+    if (_isCapturingPhoto == value) return;
+    _isCapturingPhoto = value;
+    notifyListeners();
+  }
+
+  List<String> photoIdsFor(String fieldId) {
+    final raw = _values[fieldId];
+    if (raw is List) {
+      return raw.map((e) => e.toString()).where((id) => id.isNotEmpty).toList();
+    }
+    return const [];
+  }
+
+  void addPhotoId(String fieldId, String photoId) {
+    final current = photoIdsFor(fieldId);
+    if (current.contains(photoId)) return;
+    setValue(fieldId, [...current, photoId]);
+  }
+
+  void removePhotoId(String fieldId, String photoId) {
+    final current = photoIdsFor(fieldId);
+    setValue(fieldId, current.where((id) => id != photoId).toList());
   }
 
   bool isFieldVisible(String fieldId) => _visibleFieldIds.contains(fieldId);
@@ -93,6 +122,7 @@ class FormProvider extends ChangeNotifier {
   Future<void> loadForm(String moduleAssetPath) async {
     _moduleAssetPath = moduleAssetPath;
     _dirty = false;
+    _draftRecordId = const Uuid().v4();
     final cached = _cache[moduleAssetPath];
     if (cached != null) {
       _error = null;
@@ -164,7 +194,7 @@ class FormProvider extends ChangeNotifier {
     _fields = m.fields;
     _values.clear();
     for (final f in _fields) {
-      if (f.type == 'multi_select') {
+      if (f.type == 'multi_select' || f.type == 'image_capture') {
         _values[f.fieldId] = <String>[];
       }
     }
@@ -259,6 +289,8 @@ class FormProvider extends ChangeNotifier {
 
     switch (field.type) {
       case 'multi_select':
+        return raw is List && raw.isNotEmpty;
+      case 'image_capture':
         return raw is List && raw.isNotEmpty;
       case 'gps_capture':
         if (raw is! Map) return false;

@@ -60,6 +60,9 @@ dependencies:
   url_launcher: ^6.3.1
   uuid: ^4.5.1
   http: ^1.2.0
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  share_plus: ^10.1.4
 
 
 dependency_overrides:
@@ -93,6 +96,7 @@ flutter:
 
   assets:
     - assets/data/
+    - assets/logo/
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -134,6 +134,8 @@ class RecordPhotoSyncHelper {
         return 'water_records';
       case 'vegetation':
         return 'vegetation_records';
+      case 'social':
+        return 'social_records';
       default:
         return null;
     }

@@ -121,6 +121,15 @@ class FirebaseSoilRecordAdapter implements SoilRecordRemotePort {
     return snapshot.docs.map((doc) => _mapSnapshotToSoilRecord(doc)).toList();
   }
 
+  @override
+  Stream<List<SoilRecord>> watchSoilRecordsByOuting(String outingId) {
+    return _firestore
+        .collection(_collection)
+        .where('outingId', isEqualTo: outingId)
+        .snapshots()
+        .map((snap) => snap.docs.map(_mapSnapshotToSoilRecord).toList());
+  }
+
   SoilRecord _mapSnapshotToSoilRecord(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final coord = data['coordinates'] as Map<String, dynamic>? ?? {};

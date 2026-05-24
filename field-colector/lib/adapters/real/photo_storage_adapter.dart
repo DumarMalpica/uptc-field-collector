@@ -27,8 +27,9 @@ class PhotoStorageAdapter implements PhotoLocalPort {
   Future<String> savePhotoLocally(
     Uint8List bytes,
     String recordId,
-    String photoType,
-  ) async {
+    String photoType, {
+    required String recordType,
+  }) async {
     final compressed = await _compress(bytes);
 
     final dir = await getApplicationDocumentsDirectory();
@@ -48,7 +49,7 @@ class PhotoStorageAdapter implements PhotoLocalPort {
       ..storageUrl = ''
       ..photoType = photoType
       ..recordId = recordId
-      ..recordType = _recordTypeFromId(recordId)
+      ..recordType = recordType
       ..syncStatus = 'pending'
       ..createdAt = DateTime.now();
 
@@ -57,7 +58,46 @@ class PhotoStorageAdapter implements PhotoLocalPort {
       await isar.photoModels.putByPhotoId(model);
     });
 
-    return path;
+    return photoId;
+  }
+
+  @override
+  Future<Photo?> getPhotoById(String photoId) async {
+    final isar = await IsarService.getInstance();
+    final query = isar.photoModels.buildQuery<PhotoModel>(
+      filter: FilterCondition.equalTo(property: 'photoId', value: photoId),
+      limit: 1,
+    );
+    final results = await query.findAll();
+    if (results.isEmpty) return null;
+    return results.first.toDomain();
+  }
+
+  @override
+  Future<void> relinkPhotosToRecord(
+    String fromRecordId,
+    String toRecordId, {
+    required String recordType,
+  }) async {
+    if (fromRecordId == toRecordId) return;
+
+    final isar = await IsarService.getInstance();
+    final query = isar.photoModels.buildQuery<PhotoModel>(
+      filter: FilterCondition.equalTo(property: 'recordId', value: fromRecordId),
+    );
+    final results = await query.findAll();
+    if (results.isEmpty) return;
+
+    for (final model in results) {
+      model.recordId = toRecordId;
+      model.recordType = recordType;
+    }
+
+    await isar.writeTxn(() async {
+      for (final model in results) {
+        await isar.photoModels.put(model);
+      }
+    });
   }
 
   @override
@@ -216,6 +256,8 @@ class PhotoStorageAdapter implements PhotoLocalPort {
         return 'water_records';
       case 'vegetation':
         return 'vegetation_records';
+      case 'social':
+        return 'social_records';
       default:
         return null;
     }
