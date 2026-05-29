@@ -1,32 +1,30 @@
+import 'package:field_colector/features/auth/widgets/gems_design.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
-/// Tema para formularios sobre fondo verde (login / registro).
+/// Tema para formularios GEMS sobre el cuerpo crema (login / registro).
 ///
-/// Paleta pensada para armonizar con el fondo [AppColors.primary]
-/// usando campos semi-translúcidos ("frosted glass") en vez de
-/// rellenos opacos que rompen la continuidad cromática.
+/// Inputs blancos con borde verde pálido, etiquetas UPPERCASE renderizadas
+/// por [GemsLabeledField] y CTA verde sólido. Sustituye al antiguo estilo
+/// "frosted glass" sobre fondo verde.
 class AuthFormTheme {
   AuthFormTheme._();
 
   // ── Paleta contextual ──────────────────────────────────
-  static const Color titleColor = AppColors.accent;
+  static const Color titleColor = AppColors.primary;
 
-  static const Color _fieldFill = Color(0x26FFFFFF); // white 15 %
-  static const Color _borderIdle = Color(0x40FFFFFF); // white 25 %
-  static const Color _borderFocused = Color(0x80FFFFFF); // white 50 %
-  static const Color _borderDisabled = Color(0x1AFFFFFF); // white 10 %
+  static const Color fieldTextColor = AppColors.textPrimary;
+  static const Color inputLabelColor = AppColors.primary;
+  static const Color fieldHintColor = AppColors.hintText;
+  static const Color menuItemTextColor = AppColors.textPrimary;
 
-  static const Color fieldTextColor = Colors.white;
-  static const Color inputLabelColor = Color(0xCCF5F7F8); // cloudWhite 80 %
-  static const Color fieldHintColor = Color(0x80F5F7F8); // cloudWhite 50 %
-  static const Color menuItemTextColor = AppColors.primaryDark;
-
-  static const _fieldRadius = BorderRadius.all(Radius.circular(12));
+  static const _fieldRadius = BorderRadius.all(
+    Radius.circular(GemsDesign.fieldRadius),
+  );
 
   // ── Helpers ────────────────────────────────────────────
 
-  static OutlineInputBorder _border(Color color, {double width = 1.2}) =>
+  static OutlineInputBorder _border(Color color, {double width = 1}) =>
       OutlineInputBorder(
         borderRadius: _fieldRadius,
         borderSide: BorderSide(color: color, width: width),
@@ -37,22 +35,26 @@ class AuthFormTheme {
   static ThemeData onGreen(ThemeData base) {
     final fieldInput = base.inputDecorationTheme.copyWith(
       filled: true,
-      fillColor: _fieldFill,
+      fillColor: Colors.white,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       labelStyle: const TextStyle(color: inputLabelColor),
-      floatingLabelStyle: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
-      ),
+      floatingLabelStyle: const TextStyle(color: inputLabelColor),
       hintStyle: const TextStyle(color: fieldHintColor),
-      helperStyle: const TextStyle(color: fieldHintColor),
-      prefixIconColor: inputLabelColor,
-      suffixIconColor: inputLabelColor,
-      border: _border(_borderIdle),
-      enabledBorder: _border(_borderIdle),
-      focusedBorder: _border(_borderFocused, width: 1.8),
-      disabledBorder: _border(_borderDisabled),
+      helperStyle: const TextStyle(color: AppColors.textSecondary),
+      errorStyle: const TextStyle(
+        color: AppColors.errorText,
+        fontSize: 9,
+        height: 1.2,
+      ),
+      prefixIconColor: AppColors.textPrimary.withValues(alpha: 0.4),
+      suffixIconColor: AppColors.textPrimary.withValues(alpha: 0.4),
+      border: _border(AppColors.semilleroViolet),
+      enabledBorder: _border(AppColors.semilleroViolet),
+      focusedBorder: _border(AppColors.semilleroDeepBlue, width: 1.5),
+      disabledBorder: _border(AppColors.semilleroViolet.withValues(alpha: 0.5)),
       errorBorder: _border(AppColors.error),
-      focusedErrorBorder: _border(AppColors.error, width: 1.8),
+      focusedErrorBorder: _border(AppColors.error, width: 1.5),
     );
 
     final text = base.textTheme;
@@ -60,57 +62,46 @@ class AuthFormTheme {
       textTheme: text.copyWith(
         titleLarge: text.titleLarge?.copyWith(color: titleColor),
         titleMedium: text.titleMedium?.copyWith(color: titleColor),
-        bodyLarge: text.bodyLarge?.copyWith(color: Colors.white),
-        bodyMedium: text.bodyMedium?.copyWith(color: inputLabelColor),
-        bodySmall: text.bodySmall?.copyWith(color: fieldHintColor),
+        bodyLarge: text.bodyLarge?.copyWith(color: AppColors.textPrimary),
+        bodyMedium: text.bodyMedium?.copyWith(color: AppColors.textPrimary),
+        bodySmall: text.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
       inputDecorationTheme: fieldInput,
       dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: const TextStyle(color: fieldTextColor, fontSize: 16),
+        textStyle: const TextStyle(color: fieldTextColor, fontSize: 14),
         inputDecorationTheme: fieldInput,
         menuStyle: MenuStyle(
-          backgroundColor: WidgetStateProperty.all(AppColors.authBeige),
+          backgroundColor: WidgetStateProperty.all(Colors.white),
           surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
       ),
-      listTileTheme: base.listTileTheme.copyWith(
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-        iconColor: titleColor,
-      ),
-      radioTheme: RadioThemeData(
-        fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return titleColor;
-          return Colors.white.withValues(alpha: 0.6);
-        }),
-      ),
       progressIndicatorTheme: base.progressIndicatorTheme.copyWith(
-        color: titleColor,
+        color: Colors.white,
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: Colors.white.withValues(alpha: 0.85),
+          foregroundColor: AppColors.semilleroDeepBlue,
+          textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primaryDark,
-          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          backgroundColor: AppColors.primary,
           side: BorderSide.none,
-          shape: RoundedRectangleBorder(borderRadius: _fieldRadius),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(GemsDesign.ctaRadius),
+          ),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
           textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
-          disabledForegroundColor: AppColors.primaryDark.withValues(alpha: 0.4),
-          disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.3),
+          disabledForegroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.semilleroViolet,
         ),
       ),
     );
@@ -118,23 +109,29 @@ class AuthFormTheme {
 
   // ── Per-field decoration factory ───────────────────────
 
+  /// Decoración de campo blanco con borde verde. El placeholder llega por
+  /// [hintText]; las etiquetas se renderizan arriba con [GemsLabeledField].
+  /// [borderColor] permite reflejar estados de validación (válido / error).
   static InputDecoration fieldDecoration({
-    required String labelText,
     String? hintText,
     String? helperText,
     String? errorText,
     Widget? suffixIcon,
-    InputBorder? enabledBorder,
-    InputBorder? focusedBorder,
+    Color? borderColor,
   }) {
+    final border = borderColor == null
+        ? null
+        : OutlineInputBorder(
+            borderRadius: _fieldRadius,
+            borderSide: BorderSide(color: borderColor, width: 1.5),
+          );
     return InputDecoration(
-      labelText: labelText,
       hintText: hintText,
       helperText: helperText,
       errorText: errorText,
       suffixIcon: suffixIcon,
-      enabledBorder: enabledBorder,
-      focusedBorder: focusedBorder,
+      enabledBorder: border,
+      focusedBorder: border,
     );
   }
 }
