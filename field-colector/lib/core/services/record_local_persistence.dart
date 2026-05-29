@@ -84,6 +84,49 @@ class RecordLocalPersistence {
     }
   }
 
+  /// Borra registros con `syncStatus == 'synced'` de un outing (para unpin offline).
+  ///
+  /// **NO** toca registros con syncStatus `pending` o `error` para no perder
+  /// trabajo creado offline por el usuario.
+  Future<void> deleteSyncedRecordsForOuting(String outingId) async {
+    await _deleteSyncedForModule(
+      () => _birdLocal.getRecordsByOuting(outingId),
+      (id) => _birdLocal.deleteRecord(id),
+    );
+    await _deleteSyncedForModule(
+      () => _rockLocal.getRecordsByOuting(outingId),
+      (id) => _rockLocal.deleteRecord(id),
+    );
+    await _deleteSyncedForModule(
+      () => _soilLocal.getRecordsByOuting(outingId),
+      (id) => _soilLocal.deleteRecord(id),
+    );
+    await _deleteSyncedForModule(
+      () => _vegetationLocal.getRecordsByOuting(outingId),
+      (id) => _vegetationLocal.deleteRecord(id),
+    );
+    await _deleteSyncedForModule(
+      () => _waterLocal.getRecordsByOuting(outingId),
+      (id) => _waterLocal.deleteRecord(id),
+    );
+    await _deleteSyncedForModule(
+      () => _socialLocal.getRecordsByOuting(outingId),
+      (id) => _socialLocal.deleteRecord(id),
+    );
+  }
+
+  Future<void> _deleteSyncedForModule(
+    Future<List<BaseRecord>> Function() getRecords,
+    Future<void> Function(String id) deleteRecord,
+  ) async {
+    final records = await getRecords();
+    for (final record in records) {
+      if (record.syncStatus == 'synced') {
+        await deleteRecord(record.id);
+      }
+    }
+  }
+
   Future<BaseRecord?> _getById(String moduleFormId, String recordId) {
     return switch (moduleFormId) {
       FormMapperRegistry.moduloAves => _birdLocal.getRecordById(recordId),

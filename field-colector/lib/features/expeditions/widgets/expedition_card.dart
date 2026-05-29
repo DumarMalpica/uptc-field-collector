@@ -6,9 +6,8 @@ import 'package:intl/intl.dart';
 /// Tarjeta de expedición reutilizable.
 ///
 /// Muestra datos principales del [Outing]. Un checkbox en la esquina superior
-/// derecha controla la selección (UI; cache offline pendiente — ver TODO en
-/// [ExpeditionListScreen]). Cuando está seleccionada, aparece una banderita
-/// fijada en la parte inferior de la tarjeta.
+/// derecha controla la selección para cache offline. Cuando está seleccionada,
+/// un badge indica que la expedición está disponible offline.
 class ExpeditionCard extends StatelessWidget {
   const ExpeditionCard({
     super.key,
@@ -16,12 +15,16 @@ class ExpeditionCard extends StatelessWidget {
     required this.isSelected,
     required this.onCheckChanged,
     required this.onTap,
+    this.isDownloading = false,
   });
 
   final Outing outing;
   final bool isSelected;
   final ValueChanged<bool> onCheckChanged;
   final VoidCallback onTap;
+
+  /// True mientras se descarga la data offline de esta expedición.
+  final bool isDownloading;
 
   Color _syncStatusColor(String syncStatus) {
     switch (syncStatus) {
@@ -170,21 +173,44 @@ class ExpeditionCard extends StatelessWidget {
               ),
             ),
 
-            // ── Flag badge (bottom-right, only when selected) ──
-            if (isSelected)
+            // ── Offline badge (bottom-right) ──
+            if (isDownloading)
               Positioned(
                 bottom: 8,
                 right: 12,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Icon(
-                    Icons.flag,
-                    size: 16,
-                    color: AppColors.textOnPrimary,
+                  child: const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ),
+              )
+            else if (isSelected)
+              Positioned(
+                bottom: 8,
+                right: 12,
+                child: Tooltip(
+                  message: 'Disponible offline',
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.cloud_done,
+                      size: 16,
+                      color: AppColors.textOnPrimary,
+                    ),
                   ),
                 ),
               ),
