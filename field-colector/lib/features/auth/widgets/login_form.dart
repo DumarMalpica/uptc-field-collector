@@ -1,6 +1,7 @@
 import 'package:field_colector/domain/mappers/login_user.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/auth/theme/auth_form_theme.dart';
+import 'package:field_colector/features/auth/widgets/gems_design.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -96,37 +97,45 @@ class _LoginFormState extends State<LoginForm> {
         children: [
           _staggered(
             0,
-            TextField(
-              controller: _userController,
-              onChanged: (_) => _onFieldChanged(),
-              style: const TextStyle(color: AuthFormTheme.fieldTextColor),
-              decoration: AuthFormTheme.fieldDecoration(
-                labelText: 'Correo',
-                suffixIcon: const Icon(Icons.person_outline),
+            GemsLabeledField(
+              label: 'Correo electrónico',
+              child: TextField(
+                controller: _userController,
+                onChanged: (_) => _onFieldChanged(),
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(
+                  hintText: 'tu@correo.com',
+                  suffixIcon: const Icon(Icons.mail_outline, size: 18),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
           _staggered(
             1,
-            TextField(
-              controller: _passwordController,
-              onChanged: (_) => _onFieldChanged(),
-              obscureText: _obscurePassword,
-              style: const TextStyle(color: AuthFormTheme.fieldTextColor),
-              decoration: AuthFormTheme.fieldDecoration(
-                labelText: 'Contraseña',
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+            GemsLabeledField(
+              label: 'Contraseña',
+              child: TextField(
+                controller: _passwordController,
+                onChanged: (_) => _onFieldChanged(),
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: AuthFormTheme.fieldTextColor),
+                decoration: AuthFormTheme.fieldDecoration(
+                  hintText: '••••••••',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 18,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
                 ),
               ),
             ),
