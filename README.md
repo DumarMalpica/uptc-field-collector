@@ -1,4 +1,4 @@
-# Citesa Field Colector
+# GEMS
 
 Aplicación móvil de recolección de datos en campo, desarrollada con Flutter.
 
