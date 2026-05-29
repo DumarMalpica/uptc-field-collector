@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:field_colector/core/services/expedition_sync_service.dart';
+import 'package:field_colector/core/services/offline_expedition_service.dart';
+import 'package:field_colector/domain/entities/offline_pin_progress.dart';
 import 'package:field_colector/domain/entities/outing.dart';
 import 'package:field_colector/domain/ports/outing_local_port.dart';
 import 'package:field_colector/features/auth/providers/auth_provider.dart';
 import 'package:field_colector/features/expeditions/providers/field_session_provider.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_create_screen.dart';
 import 'package:field_colector/features/expeditions/screens/expedition_detail_screen.dart';
+import 'package:field_colector/features/map/map_services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:field_colector/features/expeditions/widgets/expedition_card.dart';
 import 'package:field_colector/features/utilities/theme/app_colors.dart';
@@ -16,8 +21,9 @@ import 'package:provider/provider.dart';
 /// Contiene:
 /// - Input de búsqueda
 /// - Sección de expediciones disponibles (sin seleccionar)
-/// - Sección de expediciones seleccionadas (con check + bandera; ver TODO en [_selectedIds])
+/// - Sección de expediciones seleccionadas (con check + badge offline)
 ///
+/// Al marcar el checkbox, la expedición se descarga localmente para uso offline.
 /// Al tocar una tarjeta (no el check), se abre el detalle en el mismo espacio.
 class ExpeditionListScreen extends StatefulWidget {
   const ExpeditionListScreen({super.key, this.onNavigateToLocation});
@@ -30,14 +36,15 @@ class ExpeditionListScreen extends StatefulWidget {
 
 class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
   final TextEditingController _searchController = TextEditingController();
-  // TODO: Persistir selección y precargar datos offline (expedición, registros,
-  // mapa) para uso sin red. Hoy solo reorganiza la lista en memoria.
-  final Set<String> _selectedIds = {};
   String _searchQuery = '';
 
   List<Outing> _outings = [];
   bool _loading = true;
   String? _loadError;
+  bool _isOffline = false;
+
+  /// IDs que están actualmente descargándose.
+  final Set<String> _downloadingIds = {};
 
   /// Cuando no es null, se muestra el detalle de esta expedición.
   Outing? _detailOuting;
@@ -47,15 +54,20 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
 
   FieldSessionProvider? _fieldSessionListened;
   int _seenEnterFieldEpoch = 0;
+  StreamSubscription<OfflinePinProgress>? _progressSub;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadOutings());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _listenProgress();
+      _loadOutings();
+    });
   }
 
   @override
   void dispose() {
+    _progressSub?.cancel();
     _fieldSessionListened?.removeListener(_onFieldSessionChanged);
     _searchController.dispose();
     super.dispose();
@@ -83,26 +95,76 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     });
   }
 
+  void _listenProgress() {
+    final offlineService = context.read<OfflineExpeditionService>();
+    _progressSub = offlineService.progress.listen((event) {
+      if (!mounted) return;
+      setState(() {
+        if (event.state == OfflinePinState.downloading) {
+          _downloadingIds.add(event.outingId);
+        } else {
+          _downloadingIds.remove(event.outingId);
+        }
+      });
+
+      // Mostrar feedback al usuario
+      if (event.state == OfflinePinState.done) {
+        _showSnack('📌 ${event.message ?? "Expedición disponible offline"}');
+      } else if (event.state == OfflinePinState.error) {
+        _showSnack('⚠️ ${event.message ?? "Error al descargar"}');
+      }
+    });
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _loadOutings({bool forceRemoteSync = false}) async {
     setState(() {
       _loading = true;
       _loadError = null;
     });
     try {
-      final auth = context.read<Authprovider>();
-      final userId = auth.user?.id;
-      if (userId != null && userId.isNotEmpty) {
-        try {
-          await context
-              .read<ExpeditionSyncService>()
-              .syncExpeditionsForUser(userId);
-        } catch (_) {}
+      final reachability = context.read<MapServices>().reachability;
+      final hasNet = await reachability.hasConnectivityNow();
+      _isOffline = !hasNet;
+
+      // Si hay red, intentar sync remoto
+      if (hasNet) {
+        final auth = context.read<Authprovider>();
+        final userId = auth.user?.id;
+        if (userId != null && userId.isNotEmpty) {
+          try {
+            await context
+                .read<ExpeditionSyncService>()
+                .syncExpeditionsForUser(userId);
+          } catch (_) {}
+        }
       }
 
-      final outings = await context.read<OutingLocalPort>().getAllOutings();
+      // Leer todo de Isar
+      final allOutings = await context.read<OutingLocalPort>().getAllOutings();
+      final pinnedIds = context.read<OfflineExpeditionService>().pinnedIds;
+
       if (!mounted) return;
       setState(() {
-        _outings = outings;
+        if (_isOffline) {
+          // Offline: solo mostrar las pinned que están en Isar
+          _outings = allOutings
+              .where((o) => pinnedIds.contains(o.id))
+              .toList();
+        } else {
+          // Online: mostrar todas
+          _outings = allOutings;
+        }
         _loading = false;
       });
     } catch (e) {
@@ -113,6 +175,9 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
       });
     }
   }
+
+  Set<String> get _pinnedIds =>
+      context.read<OfflineExpeditionService>().pinnedIds;
 
   List<Outing> get _filtered {
     if (_searchQuery.isEmpty) return _outings;
@@ -126,10 +191,56 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
   }
 
   List<Outing> get _unselected =>
-      _filtered.where((o) => !_selectedIds.contains(o.id)).toList();
+      _filtered.where((o) => !_pinnedIds.contains(o.id)).toList();
 
   List<Outing> get _selected =>
-      _filtered.where((o) => _selectedIds.contains(o.id)).toList();
+      _filtered.where((o) => _pinnedIds.contains(o.id)).toList();
+
+  Future<void> _onCheckChanged(Outing outing, bool checked) async {
+    final offlineService = context.read<OfflineExpeditionService>();
+
+    if (checked) {
+      // Pin: descargar para offline
+      await offlineService.pinExpedition(outing.id);
+      if (mounted) setState(() {});
+    } else {
+      // Unpin: confirmar antes de borrar datos locales
+      final confirmed = await _showUnpinDialog(outing.name);
+      if (confirmed == true) {
+        await offlineService.unpinExpedition(outing.id);
+        if (mounted) {
+          setState(() {});
+          _showSnack('Expedición desmarcada de offline');
+        }
+      }
+    }
+  }
+
+  Future<bool?> _showUnpinDialog(String name) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Quitar de offline'),
+        content: Text(
+          '¿Desmarcar "$name" del modo offline?\n\n'
+          'Los registros sincronizados de esta expedición se borrarán '
+          'del almacenamiento local. Los registros pendientes de subir '
+          'se conservarán.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Desmarcar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +269,34 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
     // ── List mode ──
     return Column(
       children: [
+        // ── Offline banner ──
+        if (_isOffline)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppColors.accent.withValues(alpha: 0.15),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.cloud_off,
+                  size: 16,
+                  color: AppColors.accent,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Sin conexión – Mostrando expediciones guardadas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         // ── Search bar ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -217,10 +356,14 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                       ),
                     )
                   : (_unselected.isEmpty && _selected.isEmpty)
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'Sin resultados',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            _isOffline
+                                ? 'No hay expediciones guardadas offline'
+                                : 'Sin resultados',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         )
                       : RefreshIndicator(
@@ -238,9 +381,9 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                                 (o) => ExpeditionCard(
                                   outing: o,
                                   isSelected: false,
-                                  onCheckChanged: (_) {
-                                    setState(() => _selectedIds.add(o.id));
-                                  },
+                                  isDownloading: _downloadingIds.contains(o.id),
+                                  onCheckChanged: (_) =>
+                                      _onCheckChanged(o, true),
                                   onTap: () =>
                                       setState(() => _detailOuting = o),
                                 ),
@@ -248,16 +391,16 @@ class _ExpeditionListScreenState extends State<ExpeditionListScreen> {
                             ],
                             if (_selected.isNotEmpty) ...[
                               _SectionHeader(
-                                title: 'Seleccionadas',
+                                title: 'Disponibles offline',
                                 count: _selected.length,
                               ),
                               ..._selected.map(
                                 (o) => ExpeditionCard(
                                   outing: o,
                                   isSelected: true,
-                                  onCheckChanged: (_) {
-                                    setState(() => _selectedIds.remove(o.id));
-                                  },
+                                  isDownloading: _downloadingIds.contains(o.id),
+                                  onCheckChanged: (_) =>
+                                      _onCheckChanged(o, false),
                                   onTap: () =>
                                       setState(() => _detailOuting = o),
                                 ),

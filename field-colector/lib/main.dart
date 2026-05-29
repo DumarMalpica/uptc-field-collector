@@ -9,8 +9,10 @@ import 'package:field_colector/adapters/real/isar_user_adapter.dart';
 import 'package:field_colector/adapters/real/isar_vegetation_record_adapter.dart';
 import 'package:field_colector/adapters/real/isar_water_record_adapter.dart';
 import 'package:field_colector/adapters/real/photo_storage_adapter.dart';
+import 'package:field_colector/core/database/offline_pin_store.dart';
 import 'package:field_colector/core/services/connectivity_sync_service.dart';
 import 'package:field_colector/core/services/expedition_sync_service.dart';
+import 'package:field_colector/core/services/offline_expedition_service.dart';
 import 'package:field_colector/core/services/record_local_persistence.dart';
 import 'package:field_colector/core/services/record_sync_service.dart';
 import 'package:field_colector/core/services/record_submit_service.dart';
@@ -202,6 +204,16 @@ class MyApp extends StatelessWidget {
             outingLocal: context.read<OutingLocalPort>(),
           ),
         ),
+        Provider<OfflinePinStore>(create: (_) => OfflinePinStore()),
+        Provider<OfflineExpeditionService>(
+          create: (context) => OfflineExpeditionService(
+            pinStore: context.read<OfflinePinStore>(),
+            expeditionSync: context.read<ExpeditionSyncService>(),
+            recordSync: context.read<RecordSyncService>(),
+            recordPersistence: context.read<RecordLocalPersistence>(),
+            reachability: context.read<MapServices>().reachability,
+          )..init(),
+        ),
         Provider<UserCacheService>(
           create: (context) => UserCacheService(
             userRemote: context.read<UserRemotePort>(),
@@ -266,8 +278,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
         Provider<ConnectivitySyncService>(
-          create: (context) =>
-              ConnectivitySyncService(context.read<SyncPort>())..startListening(),
+          create: (context) => ConnectivitySyncService(
+            context.read<SyncPort>(),
+            offlineExpeditionService: context.read<OfflineExpeditionService>(),
+          )..startListening(),
         ),
         Provider<ExportService>(
           create: (context) => ExportService(
